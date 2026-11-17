@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="0" fill="#172036"/>
+  <!-- pochette de classeur -->
+  <rect x="96" y="70" width="320" height="372" rx="34" fill="#22305a"/>
+  <rect x="112" y="86" width="288" height="340" rx="26" fill="#2b3d70"/>
+  <!-- carte de dos, légèrement inclinée -->
+  <g transform="rotate(-8 256 256)">
+    <rect x="146" y="102" width="220" height="307" rx="14" fill="#f4c430"/>
+    <rect x="162" y="118" width="188" height="275" rx="8" fill="#2b4c9f"/>
+    <rect x="162" y="118" width="188" height="120" rx="8" fill="#93b1ff" opacity="0.35"/>
+    <rect x="182" y="262" width="148" height="12" rx="6" fill="#e9edf5" opacity="0.9"/>
+    <rect x="182" y="288" width="104" height="12" rx="6" fill="#e9edf5" opacity="0.55"/>
+    <rect x="182" y="356" width="56" height="12" rx="6" fill="#f4c430"/>
+  </g>
+</svg>

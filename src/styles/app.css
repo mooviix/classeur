@@ -1,0 +1,230 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/archivo/standard.css';
+
+/* « dark: » suit le thème choisi dans l'app (data-theme), sinon celui du téléphone */
+@custom-variant dark {
+  &:where([data-theme='sombre'], [data-theme='sombre'] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme='clair']), :root:not([data-theme='clair']) *) {
+      @slot;
+    }
+  }
+}
+
+/*
+  Classeur — jetons de design
+  - pochette : le gris du plastique des pochettes de classeur (fond)
+  - encre    : le bleu nuit du dos des cartes (texte)
+  - dos      : bleu du dos des cartes (éléments actifs, liens)
+  - bordure  : le jaune de la bordure des cartes (bouton Scan, barres de complétion, rien d'autre)
+  - hausse / baisse : sens des variations de prix
+  Une seule famille, Archivo, avec sa largeur variable : large pour les montants, étroite pour numéros et codes.
+*/
+
+:root {
+  --pochette: #edf0f3;
+  --surface: #ffffff;
+  --surface-2: #f6f8fa;
+  --encre: #172036;
+  --encre-2: #566079;
+  --encre-3: #8a93a6;
+  --trait: #d5dae2;
+  --dos: #2b4c9f;
+  --dos-doux: #e3e9f6;
+  --sur-dos: #ffffff;
+  --bordure: #f4c430;
+  --bordure-encre: #3a2c00;
+  --hausse: #12805a;
+  --hausse-doux: #e1f3ea;
+  --baisse: #c93636;
+  --baisse-doux: #fbe6e6;
+  --ombre-pochette: inset 0 0 0 1px rgb(23 32 54 / 0.07), inset 0 1px 0 rgb(255 255 255 / 0.9);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='clair']) {
+    --pochette: #0e1628;
+    --surface: #16213a;
+    --surface-2: #1b2846;
+    --encre: #e9edf5;
+    --encre-2: #a3aec4;
+    --encre-3: #6f7b94;
+    --trait: #2a3756;
+    --dos: #93b1ff;
+    --dos-doux: #22325a;
+    --sur-dos: #0e1628;
+    --bordure: #f4c430;
+    --bordure-encre: #3a2c00;
+    --hausse: #45cf91;
+    --hausse-doux: #133a2c;
+    --baisse: #ff7a7a;
+    --baisse-doux: #3d1d24;
+    --ombre-pochette: inset 0 0 0 1px rgb(255 255 255 / 0.06), inset 0 1px 0 rgb(255 255 255 / 0.04);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='sombre'] {
+  --pochette: #0e1628;
+  --surface: #16213a;
+  --surface-2: #1b2846;
+  --encre: #e9edf5;
+  --encre-2: #a3aec4;
+  --encre-3: #6f7b94;
+  --trait: #2a3756;
+  --dos: #93b1ff;
+  --dos-doux: #22325a;
+  --sur-dos: #0e1628;
+  --hausse: #45cf91;
+  --hausse-doux: #133a2c;
+  --baisse: #ff7a7a;
+  --baisse-doux: #3d1d24;
+  --ombre-pochette: inset 0 0 0 1px rgb(255 255 255 / 0.06), inset 0 1px 0 rgb(255 255 255 / 0.04);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: 'Archivo Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --color-pochette: var(--pochette);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-encre: var(--encre);
+  --color-encre-2: var(--encre-2);
+  --color-encre-3: var(--encre-3);
+  --color-trait: var(--trait);
+  --color-dos: var(--dos);
+  --color-dos-doux: var(--dos-doux);
+  --color-sur-dos: var(--sur-dos);
+  --color-bordure: var(--bordure);
+  --color-bordure-encre: var(--bordure-encre);
+  --color-hausse: var(--hausse);
+  --color-hausse-doux: var(--hausse-doux);
+  --color-baisse: var(--baisse);
+  --color-baisse-doux: var(--baisse-doux);
+
+  /* Échelle typographique (base 16 px, ratio ~1,25) */
+  --text-micro: 0.6875rem;
+  --text-micro--line-height: 1rem;
+  --text-petit: 0.8125rem;
+  --text-petit--line-height: 1.125rem;
+  --text-corps: 1rem;
+  --text-corps--line-height: 1.4rem;
+  --text-titre: 1.25rem;
+  --text-titre--line-height: 1.6rem;
+  --text-grand: 1.75rem;
+  --text-grand--line-height: 2rem;
+  --text-montant: 2.5rem;
+  --text-montant--line-height: 2.6rem;
+
+  --radius-pochette: 0.625rem;
+  --radius-feuille: 1.25rem;
+
+  --ease-ressort: cubic-bezier(0.2, 0.9, 0.25, 1.15);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    background: var(--pochette);
+  }
+  body {
+    @apply bg-pochette text-encre font-sans antialiased;
+    font-feature-settings: 'tnum' 0;
+    overscroll-behavior-y: none;
+  }
+  /* iOS zoome si un champ fait moins de 16 px */
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+  :focus-visible {
+    outline: 2px solid var(--dos);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Chiffres alignés pour tous les montants */
+  .chiffres {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Largeurs d'Archivo */
+  .large {
+    font-stretch: 125%;
+  }
+  .semi-large {
+    font-stretch: 112%;
+  }
+  .etroit {
+    font-stretch: 75%;
+  }
+  .tres-etroit {
+    font-stretch: 62%;
+  }
+  .pb-onglets {
+    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  }
+  .pt-sur {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-sur {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  /* Pochette de classeur : creux léger, pas d'ombre portée */
+  .pochette {
+    background: var(--surface-2);
+    box-shadow: var(--ombre-pochette);
+    border-radius: var(--radius-pochette);
+  }
+  /* Coins d'une vraie carte : ~4,7 % de la largeur (63 × 88 mm, coins de 3 mm) */
+  .coins-carte {
+    border-radius: 4.7% / 3.4%;
+  }
+  .format-carte {
+    aspect-ratio: 63 / 88;
+  }
+  .sans-barre {
+    scrollbar-width: none;
+  }
+  .sans-barre::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Feuille du bas : <dialog> collé en bas, qui monte à l'ouverture */
+dialog.feuille {
+  max-height: none;
+  border: 0;
+  inset-block-end: 0;
+}
+dialog.feuille[open] > div {
+  animation: feuille-monte 0.32s var(--ease-ressort);
+}
+dialog.feuille::backdrop {
+  animation: feuille-fond 0.2s ease-out;
+}
+@keyframes feuille-monte {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes feuille-fond {
+  from {
+    opacity: 0;
+  }
+}

@@ -1,0 +1,10 @@
+node_modules
+dist
+dev-dist
+.DS_Store
+*.log
+# Données générées par le pipeline (publiées par le déploiement, pas versionnées ici)
+public/data/*
+!public/data/.gitkeep
+# Caches de téléchargement du pipeline
+.cache
