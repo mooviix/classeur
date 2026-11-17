@@ -64,7 +64,11 @@ function main(): void {
   if (!estJour(meta.historique?.debut) || !estJour(meta.historique?.fin) || meta.historique.debut > meta.historique.fin) erreur('meta : historique invalide');
   if (meta.historique?.fin !== meta.datePrix) erreur(`meta : historique.fin (${meta.historique?.fin}) ≠ datePrix (${meta.datePrix})`);
   if (meta.scan !== undefined && (!estTexte(meta.scan) || !existsSync(join(sortie, meta.scan)))) erreur('meta : scan pointe vers un fichier absent');
-  const autres = Object.keys(meta).filter((k) => !['v', 'genereLe', 'datePrix', 'createdAt', 'catalogue', 'scelles', 'prix', 'historique', 'scan'].includes(k));
+  // `logos` (optionnel, hors contrat src/data/types.ts pour l'instant) : chemin relatif à data/ de logos.json.
+  const cheminLogos = (meta as { logos?: unknown }).logos;
+  if (cheminLogos !== undefined && (!estTexte(cheminLogos) || cheminLogos.includes('..') || cheminLogos.startsWith('/') || !existsSync(join(sortie, cheminLogos))))
+    erreur('meta : logos pointe vers un fichier absent');
+  const autres = Object.keys(meta).filter((k) => !['v', 'genereLe', 'datePrix', 'createdAt', 'catalogue', 'scelles', 'prix', 'historique', 'scan', 'logos'].includes(k));
   if (autres.length) erreur(`meta : champs inconnus ${autres.join(', ')}`);
 
   // ---------- catalogue ----------
@@ -137,6 +141,22 @@ function main(): void {
     });
     notes.push(`catalogue : ${cat.cartes.length} cartes, ${nbVariantes} variantes, ${cmCartes.size} idProduct, ${cat.sets.length} sets, ${cat.series.length} séries`);
     notes.push(tailles(meta.catalogue, c.texte));
+  }
+
+  // ---------- logos FR explicites (data/logos.json : { "<id set>": "<url>" }) ----------
+  if (typeof cheminLogos === 'string' && existsSync(join(sortie, cheminLogos))) {
+    const l = lire<Record<string, unknown>>(join(sortie, cheminLogos));
+    if (l) {
+      const logos = l.obj;
+      if (!logos || typeof logos !== 'object' || Array.isArray(logos)) erreur(`${cheminLogos} : objet { "<id set>": "<url>" } attendu`);
+      else {
+        for (const [id, url] of Object.entries(logos)) {
+          if (setsIds.size && !setsIds.has(id)) erreur(`${cheminLogos} : set ${id} absent du catalogue`);
+          if (typeof url !== 'string' || !/^https:\/\/\S+$/.test(url) || /cardmarket\.com/.test(url)) erreur(`${cheminLogos} : URL invalide pour ${id}`);
+        }
+        notes.push(`logos : ${Object.keys(logos).length} logos explicites dans ${cheminLogos}`);
+      }
+    }
   }
 
   // ---------- scellés ----------

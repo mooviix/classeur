@@ -4,12 +4,14 @@
 //   node scripts/donnees/construire.ts --forcer        retraite même si le guide est déjà traité (reconstruit tout)
 //   node scripts/donnees/construire.ts --meta          met seulement à jour meta.json (ex. après le script du scanner)
 //   --sortie <dossier>                                 dossier de sortie (par défaut public/data)
-//   --rafraichir                                       ignore les caches TCGdex GraphQL (20 h) et images (7 jours)
-//   --sans-images                                      ne cherche pas de nouvelles images de scellés
+//   --rafraichir                                       ignore les caches TCGdex GraphQL (20 h) et listes d'images (7 jours)
+//   --sans-images                                      aucune requête d'image : images de scellés de la veille, logos et
+//                                                      images de cartes d'après les vérifications déjà en cache
 //   --guide <fichier.json[.gz]>                        traite ce guide (ex. capture Wayback) au lieu de celui du jour
 //
-// Écrit dans le dossier de sortie : catalogue-fr.<hash8>.json, scelles-fr.<hash8>.json, prix/<date>.json (7 derniers),
-// historique/<groupe>.json, puis meta.json EN DERNIER (l'app ne voit jamais un état à moitié écrit).
+// Écrit dans le dossier de sortie : catalogue-fr.<hash8>.json, scelles-fr.<hash8>.json, logos.json (logos explicites,
+// FR de préférence), prix/<date>.json (7 derniers), historique/<groupe>.json, puis meta.json EN DERNIER (l'app ne voit
+// jamais un état à moitié écrit).
 // Sur GitHub Actions, écrit aussi `nouveau=true|false` et `date=` dans $GITHUB_OUTPUT.
 import { appendFileSync, existsSync, readFileSync, readdirSync, unlinkSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
@@ -25,21 +27,30 @@ import {
   enJson,
   hash8,
   journal,
+  jourParis,
   lireArguments,
   lireJson,
   message,
   octets,
 } from './commun.ts';
 import { chargerHistoriques, ecrireHistoriques, groupesDepuisFichiers, inscrireGuide, produitsSansHistorique } from './historique.ts';
+import { verifierImagesCartes } from './images-cartes.ts';
 import { imagesScelles } from './images-scelles.ts';
+import { verifierLogos } from './logos.ts';
 import { construirePrix } from './prix.ts';
 import { chargerCorrections, construireScelles } from './scelles.ts';
 import { lireApi, lireDepot, majDepot } from './tcgdex.ts';
+import { Verificateur } from './verification.ts';
 
 /** Jours d'archives compactes gardés dans .cache/archives (rattrapage des produits reliés en retard). */
 const JOURS_ARCHIVES = 60;
 /** Fichiers de prix du jour gardés. */
 const FICHIERS_PRIX = 7;
+/** Logos explicites, FR de préférence (data/logos.json : { "<id set>": "<url>" }), référencés par le champ optionnel `logos` de meta.json. */
+const FICHIER_LOGOS = 'logos.json';
+
+/** meta.json publié : le contrat (src/data/types.ts) + `logos`, chemin relatif à data/ de logos.json (optionnel). */
+type MetaPubliee = FichierMeta & { logos?: string };
 
 function sortieGithub(cle: string, valeur: string): void {
   if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `${cle}=${valeur}\n`);
@@ -83,7 +94,7 @@ async function main(): Promise<void> {
   const forcer = args.has('forcer');
   const rafraichir = args.has('rafraichir');
   const fichierMeta = join(sortie, 'meta.json');
-  const meta = lireJson<FichierMeta>(fichierMeta);
+  const meta = lireJson<MetaPubliee>(fichierMeta);
 
   if (args.has('meta')) {
     if (!meta) throw new Error(`${fichierMeta} absent : lance d'abord le pipeline complet.`);
@@ -124,6 +135,8 @@ async function main(): Promise<void> {
   let groupesCartes: Map<number, Set<string>>;
   let groupesScelles: Map<number, string>;
   let produitsHolo: Set<number>;
+  // Logos explicites : null = garder logos.json tel quel (sources indisponibles).
+  let logos: Record<string, string> | null = null;
   try {
     const commit = majDepot();
     const depot = lireDepot(commit);
@@ -136,10 +149,33 @@ async function main(): Promise<void> {
     const corrections = chargerCorrections(import.meta.dirname);
     const ctx = { depot, liens, setsCatalogue: cat.fichier.sets, nomsEn, images: new Map<number, string>() };
     let sc = construireScelles(listes.nonsingles.products, ctx, corrections, genereLe);
-    const images = await imagesScelles(sc.fichier, ancienScelles, { chercher: !args.has('sans-images'), forcer: rafraichir, depot, setsCatalogue: cat.fichier.sets });
-    if (images.size) {
-      ctx.images = images;
-      sc = construireScelles(listes.nonsingles.products, ctx, corrections, genereLe);
+    // Images vérifiées réellement (HEAD, cache .cache/verifications.json) : logos et symboles des sets, images des
+    // cartes récentes, images des scellés. Les trois avancent en parallèle (au plus 4 requêtes/s par hôte).
+    const verificateur = new Verificateur(!args.has('sans-images'));
+    try {
+      const [resLogos, , images] = await Promise.all([
+        verifierLogos(cat.fichier, verificateur, { forcer: rafraichir }),
+        verifierImagesCartes(cat.fichier, verificateur, jourParis(new Date())),
+        imagesScelles(sc.fichier, ancienScelles, {
+          chercher: !args.has('sans-images'),
+          forcer: rafraichir,
+          depot,
+          cartesFr: api.cartesFr,
+          setsCatalogue: cat.fichier.sets,
+          series: cat.fichier.series,
+          nomsEn,
+          verificateur,
+        }),
+      ]);
+      logos = resLogos.logos;
+      if (images.size) {
+        ctx.images = images;
+        sc = construireScelles(listes.nonsingles.products, ctx, corrections, genereLe);
+      }
+    } finally {
+      verificateur.sauver();
+      const st = verificateur.stats;
+      journal(`Vérifications HEAD : ${st.requetes} requêtes (${st.presentes} présentes, ${st.absentes} absentes, ${st.erreurs} sans réponse)`);
     }
     fichierCatalogue = cat.fichier;
     fichierScelles = sc.fichier;
@@ -148,7 +184,7 @@ async function main(): Promise<void> {
     produitsHolo = cat.produitsHolo;
   } catch (e) {
     if (!ancienCatalogue || !ancienScelles) throw e;
-    avertir(`Sources du catalogue indisponibles (${message(e)}) : catalogue et scellés de la veille conservés.`);
+    avertir(`Sources du catalogue indisponibles (${message(e)}) : catalogue, scellés et logos de la veille conservés.`);
     fichierCatalogue = ancienCatalogue;
     fichierScelles = ancienScelles;
     ({ groupesCartes, groupesScelles, holo: produitsHolo } = groupesDepuisFichiers(ancienCatalogue, ancienScelles));
@@ -206,8 +242,20 @@ async function main(): Promise<void> {
       `${scelles.nom} (${octets(scelles.taille)}${scelles.nouveau ? ', nouveau' : ', inchangé'})`,
   );
 
-  // 8. meta.json en dernier
-  const nouvelleMeta: FichierMeta = {
+  // 8. Logos explicites : data/logos.json = { "<id set>": "<url>" } (ordre du catalogue), absent s'il n'y en a aucun.
+  const fichierLogos = join(sortie, FICHIER_LOGOS);
+  let avecLogos = false;
+  if (logos) {
+    const ordre = new Map(fichierCatalogue.sets.map((s, i) => [s[0], i]));
+    const tries = Object.fromEntries(Object.entries(logos).sort((a, b) => (ordre.get(a[0]) ?? 0) - (ordre.get(b[0]) ?? 0)));
+    if (Object.keys(tries).length) {
+      ecrireJson(fichierLogos, tries, true);
+      avecLogos = true;
+    } else if (existsSync(fichierLogos)) unlinkSync(fichierLogos);
+  } else avecLogos = meta?.logos === FICHIER_LOGOS && existsSync(fichierLogos);
+
+  // 9. meta.json en dernier
+  const nouvelleMeta: MetaPubliee = {
     v: 1,
     genereLe,
     datePrix: guide.jour,
@@ -217,6 +265,7 @@ async function main(): Promise<void> {
     prix: cheminPrix,
     historique: { debut: statsHisto.debut ?? guide.jour, fin: statsHisto.fin ?? guide.jour },
   };
+  if (avecLogos) nouvelleMeta.logos = FICHIER_LOGOS;
   const scan = cheminScan(sortie);
   if (scan) nouvelleMeta.scan = scan;
   ecrireJson(fichierMeta, nouvelleMeta, true);

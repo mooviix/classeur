@@ -244,11 +244,13 @@ export function chargerDonnees(forcer = false): Promise<void> {
         lireJson<FichierScelles>(meta.scelles),
         lireJson<FichierPrix>(meta.prix),
         // logos d'autres sources (facultatif : on s'en passe s'il manque)
-        meta.logos ? lireJson<Record<string, string>>(meta.logos).catch(() => null) : Promise.resolve(null),
+        // nom de fichier fixe : on le versionne avec la date des prix pour ne pas garder une vieille copie en cache
+        meta.logos ? lireJson<Record<string, string>>(`${meta.logos}?v=${meta.datePrix}`).catch(() => null) : Promise.resolve(null),
       ]);
       const donnees = construire(meta, cat, sc, prix);
       if (logos) {
-        for (const e of donnees.extensions) if (!e.logo && typeof logos[e.id] === 'string') e.logo = logos[e.id];
+        // une entrée de logos.json a priorité (ex. logo FR de Poképédia plutôt que le logo EN de TCGdex)
+        for (const e of donnees.extensions) if (typeof logos[e.id] === 'string') e.logo = logos[e.id];
       }
       publier({ statut: 'pret', donnees });
     } catch (e) {
