@@ -1,7 +1,7 @@
 // Sauvegarde / restauration de la collection (tout est sur le téléphone : c'est la seule copie).
 // Format : un fichier JSON lisible, versionné, que l'on peut ranger dans Fichiers / iCloud / Drive.
 import { aujourdhui } from '../lib/format';
-import { db, type Possession, type Releve, type Souhait } from './schema';
+import { db, type Possession, type Releve, type Souhait, type Vente } from './schema';
 
 export interface FichierSauvegarde {
   app: 'classeur';
@@ -9,18 +9,20 @@ export interface FichierSauvegarde {
   creeLe: string;
   possessions: Possession[];
   souhaits: Souhait[];
+  ventes: Vente[];
   releves: Releve[];
 }
 
 const CLE_DERNIERE = 'derniere-sauvegarde';
 
 export async function creerSauvegarde(): Promise<FichierSauvegarde> {
-  const [possessions, souhaits, releves] = await Promise.all([
+  const [possessions, souhaits, ventes, releves] = await Promise.all([
     db.possessions.toArray(),
     db.souhaits.toArray(),
+    db.ventes.toArray(),
     db.releves.toArray(),
   ]);
-  return { app: 'classeur', version: 1, creeLe: new Date().toISOString(), possessions, souhaits, releves };
+  return { app: 'classeur', version: 1, creeLe: new Date().toISOString(), possessions, souhaits, ventes, releves };
 }
 
 /**
@@ -74,6 +76,7 @@ function verifier(brut: unknown): FichierSauvegarde {
     creeLe: String(f.creeLe ?? ''),
     possessions: f.possessions,
     souhaits: Array.isArray(f.souhaits) ? f.souhaits : [],
+    ventes: Array.isArray(f.ventes) ? f.ventes : [],
     releves: Array.isArray(f.releves) ? f.releves : [],
   };
 }
@@ -85,9 +88,9 @@ function verifier(brut: unknown): FichierSauvegarde {
  */
 export async function restaurerSauvegarde(fichier: File, mode: 'remplacer' | 'fusionner'): Promise<{ objets: number }> {
   const f = verifier(JSON.parse(await fichier.text()));
-  await db.transaction('rw', db.possessions, db.souhaits, db.releves, async () => {
+  await db.transaction('rw', [db.possessions, db.souhaits, db.ventes, db.releves], async () => {
     if (mode === 'remplacer') {
-      await Promise.all([db.possessions.clear(), db.souhaits.clear(), db.releves.clear()]);
+      await Promise.all([db.possessions.clear(), db.souhaits.clear(), db.ventes.clear(), db.releves.clear()]);
     }
     const sansId = <T extends { id?: number }>(o: T): T => {
       const { id: _id, ...reste } = o;
@@ -95,6 +98,7 @@ export async function restaurerSauvegarde(fichier: File, mode: 'remplacer' | 'fu
     };
     await db.possessions.bulkAdd(f.possessions.map(sansId));
     await db.souhaits.bulkAdd(f.souhaits.map(sansId));
+    await db.ventes.bulkAdd(f.ventes.map(sansId));
     await db.releves.bulkPut(f.releves);
   });
   return { objets: f.possessions.reduce((n, p) => n + p.quantite, 0) };

@@ -76,6 +76,33 @@ export interface Releve {
   nbObjets: number;
 }
 
+/**
+ * Une vente : des exemplaires sortis de la collection contre de l'argent.
+ * On garde une copie des caractéristiques du lot vendu pour calculer le bénéfice réalisé, même si le lot n'existe plus.
+ */
+export interface Vente {
+  id?: number;
+  type: TypeObjet;
+  ref: string;
+  variante?: Variante;
+  etat?: Etat;
+  gradation?: Gradation;
+  langue: string;
+  quantite: number;
+  /** Prix de vente PAR UNITÉ, en euros. */
+  prixVente: number;
+  /** Frais totaux de la vente (commission, port payé…), en euros. */
+  frais?: number;
+  /** Prix d'achat PAR UNITÉ du lot vendu (copie), s'il était connu. */
+  prixAchat?: number;
+  /** 'YYYY-MM-DD' */
+  date: string;
+  plateforme?: string;
+  note?: string;
+  /** ISO */
+  creeLe: string;
+}
+
 export interface Reglage {
   cle: string;
   valeur: unknown;
@@ -84,6 +111,7 @@ export interface Reglage {
 export const db = new Dexie('classeur') as Dexie & {
   possessions: EntityTable<Possession, 'id'>;
   souhaits: EntityTable<Souhait, 'id'>;
+  ventes: EntityTable<Vente, 'id'>;
   releves: EntityTable<Releve, 'date'>;
   reglages: EntityTable<Reglage, 'cle'>;
 };
@@ -91,6 +119,7 @@ export const db = new Dexie('classeur') as Dexie & {
 db.version(1).stores({
   possessions: '++id, [type+ref], type, ref, ajouteLe, dateAchat',
   souhaits: '++id, [type+ref], type, ref',
+  ventes: '++id, [type+ref], date',
   releves: 'date',
   reglages: 'cle',
 });
