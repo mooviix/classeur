@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { quandProche } from '../lib/proximite';
 
 interface Props {
   /** URL complète de l'image (null = pas d'image connue). */
@@ -22,6 +23,13 @@ interface Props {
 export function Visuel({ src, alt, forme = 'carte', vide, repli, className = '', prioritaire }: Props) {
   const [erreur, setErreur] = useState(false);
   const [chargee, setChargee] = useState(false);
+  // Les images prioritaires partent tout de suite ; les autres dès qu'elles approchent de l'écran (~1 200 px).
+  const cadreRef = useRef<HTMLDivElement>(null);
+  const [proche, setProche] = useState(!!prioritaire);
+  useEffect(() => {
+    if (proche || !cadreRef.current) return;
+    return quandProche(cadreRef.current, () => setProche(true));
+  }, [proche]);
   const afficherImage = !vide && !!src && !erreur;
   const cadre = forme === 'carte' ? 'format-carte coins-carte' : 'aspect-square rounded-2xl';
   // Carte présente : ombre portée douce. Pochette vide : creux en pointillés.
@@ -32,12 +40,13 @@ export function Visuel({ src, alt, forme = 'carte', vide, repli, className = '',
       : 'pochette';
 
   return (
-    <div className={`relative overflow-hidden transition-shadow duration-300 ${fond} ${cadre} ${className}`}>
-      {afficherImage ? (
+    <div ref={cadreRef} className={`relative overflow-hidden transition-shadow duration-300 ${fond} ${cadre} ${className}`}>
+      {afficherImage && !proche ? null : afficherImage ? (
         <img
           src={src}
           alt={alt}
-          loading={prioritaire ? 'eager' : 'lazy'}
+          loading="eager"
+          fetchPriority={prioritaire ? 'high' : 'auto'}
           decoding="async"
           draggable={false}
           onError={() => setErreur(true)}

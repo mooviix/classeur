@@ -35,7 +35,8 @@ function Coquille() {
           <Route path="/scanner" component={Scanner} />
           <Route path="/extensions" component={Extensions} />
           <Route path="/extensions/:id">{(p) => <Extension id={decodeURIComponent(p.id)} />}</Route>
-          <Route path="/recherche" component={Recherche} />
+          <Route path="/recherche/scelles">{() => <Recherche ongletInitial="scelles" />}</Route>
+          <Route path="/recherche">{() => <Recherche />}</Route>
           <Route path="/carte/:id">{(p) => <FicheCarte id={decodeURIComponent(p.id)} />}</Route>
           <Route path="/scelle/:id">{(p) => <FicheScelle id={decodeURIComponent(p.id)} />}</Route>
           <Route path="/souhaits" component={Souhaits} />

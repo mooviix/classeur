@@ -297,7 +297,7 @@ export function Collection() {
             titre="Pas encore de scellé"
             texte="Displays, coffrets, boosters : ajoute-les depuis la recherche pour suivre leur cote et ce qu’ils te rapportent."
             action={
-              <LienBouton href="/recherche" icone={<Search size={18} aria-hidden />}>
+              <LienBouton href="/recherche/scelles" icone={<Search size={18} aria-hidden />}>
                 Chercher un scellé
               </LienBouton>
             }

@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'wouter';
 import { Bouton } from '../components/Bouton';
 import { Segments } from '../components/Segments';
+import { normaliser } from '../lib/format';
 import { Vide } from '../components/Vide';
 import { EtatCatalogue } from '../components/fiche/EtatCatalogue';
 import { LogoExtension } from '../components/fiche/LogoExtension';
@@ -73,10 +74,21 @@ function useRetarde<T>(valeur: T, ms: number): T {
   return v;
 }
 
-export function Recherche() {
+/** Mots qui désignent un produit scellé : la recherche bascule d'elle-même sur l'onglet Scellés. */
+const MOTS_SCELLES =
+  /\b(etb|display|displays|demi|coffret|coffrets|booster|boosters|bundle|tripack|duopack|blister|upc|pokebox|poke ?box|tin|mini ?tin|collection|deck|kit|scelle|scelles|carton|case|pack)\b/;
+
+export function Recherche({ ongletInitial }: { ongletInitial?: Onglet } = {}) {
   const etat = useDonnees();
   const [saisie, setSaisie] = useState(memoire.saisie);
-  const [onglet, setOnglet] = useState<Onglet>(memoire.onglet);
+  const [onglet, setOngletBrut] = useState<Onglet>(ongletInitial ?? memoire.onglet);
+  // Un choix d'onglet fait à la main n'est pas écrasé par la bascule automatique.
+  // Arrivée par « Chercher un scellé » : l'onglet Scellés est voulu, on n'y touche plus.
+  const choixManuel = useRef(ongletInitial != null);
+  const setOnglet = (o: Onglet) => {
+    choixManuel.current = true;
+    setOngletBrut(o);
+  };
   const [nbCartes, setNbCartes] = useState(memoire.nbCartes);
   const [nbScelles, setNbScelles] = useState(memoire.nbScelles);
   const champ = useRef<HTMLInputElement>(null);
@@ -120,6 +132,9 @@ export function Recherche() {
     setSaisie(texte);
     setNbCartes(PAS_CARTES);
     setNbScelles(PAS_SCELLES);
+    // « etb règne delta », « display 151 »… : on montre directement les produits scellés
+    const q = normaliser(texte);
+    if (!choixManuel.current && q.length >= 2) setOngletBrut(MOTS_SCELLES.test(q) ? 'scelles' : 'cartes');
   };
 
   return (
@@ -146,7 +161,7 @@ export function Recherche() {
               autoCapitalize="off"
               spellCheck={false}
               aria-label="Chercher une carte ou un produit scellé"
-              placeholder="Nom, 25/102 ou MEW 199"
+              placeholder={onglet === 'scelles' ? 'ETB, display, bundle, coffret…' : 'Nom, 25/102 ou MEW 199'}
               value={saisie}
               onChange={(e) => changerSaisie(e.target.value)}
               className="h-12 w-full min-w-0 rounded-full bg-surface pr-12 pl-11 text-encre shadow-[inset_0_0_0_1px_var(--trait),0_1px_2px_rgb(21_23_28/0.04)] placeholder:text-encre-3 focus-visible:shadow-[inset_0_0_0_1.5px_var(--encre)] focus-visible:outline-none [&::-webkit-search-cancel-button]:appearance-none"

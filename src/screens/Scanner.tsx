@@ -551,7 +551,17 @@ export function Scanner() {
 
       {/* Barre du bas : déclencheur au pouce */}
       <div inert={resultats} className="pb-sur absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/70 to-black/0">
-        <div className="mx-auto grid max-w-md grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 pt-6 pb-5">
+        {/* Le scanner reconnaît les cartes ; un produit scellé se cherche par son nom */}
+        <div className="flex justify-center pt-6">
+          <button
+            type="button"
+            onClick={() => naviguer('/recherche/scelles')}
+            className="appui min-h-9 rounded-full bg-white/14 px-3.5 text-petit font-semibold text-white backdrop-blur-sm active:bg-white/25"
+          >
+            Un produit scellé ? Cherche-le ici
+          </button>
+        </div>
+        <div className="mx-auto grid max-w-md grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 pt-3 pb-5">
           <BoutonBas label="Choisir une photo" onClick={() => fichierRef.current?.click()} disabled={occupe}>
             <ImageIcon size={21} aria-hidden />
           </BoutonBas>
