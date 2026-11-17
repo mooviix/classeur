@@ -643,7 +643,7 @@ S'y ajoutent deux règles : confirmé [S4]
   - la politique de confidentialité précise que les SDK Meta et AppsFlyer **ne servent pas à afficher de pub** : ils mesurent seulement les installations venues des campagnes de PokéItem ;
   - le billet v2 promet « sans publicité ciblée ».
 - Un utilisateur a même demandé une version gratuite financée par la pub, et le développeur a répondu que l'idée était « notée ». confirmé [S33]
-- **Ce que Samy perçoit sans doute comme des « pubs »** : supposé
+- **Ce qui est sans doute perçu comme des « pubs »** : supposé
   - l'offre Premium à l'onboarding et à chaque fonction verrouillée (une langue verrouillée « ouvre l'offre ») ;
   - la fenêtre « Quoi de neuf » ;
   - l'onglet Amazon et les liens d'achat affiliés (eBay, Amazon) ;
@@ -748,7 +748,7 @@ Contexte : le dépôt `classeur` est aujourd'hui une PWA locale (Vite, React, De
 | P0-12 | Souhaits et doublons | Cœur sur la fiche (avec la version visée) ; liste globale des doublons. |
 | P0-13 | Courbe de valeur de la collection | 7 j, 1 m, 3 m, 6 m, 1 an, tout ; plus fortes hausses et baisses. |
 | P0-14 | Fiche carte | Image, infos, cote par état, courbe, liste de mes exemplaires (+/−), liens vers Cardmarket et eBay. |
-| P0-15 | Import / export CSV | Export complet, et import (dont l'export CSV de PokéItem, pour récupérer la collection actuelle de Samy). |
+| P0-15 | Import / export CSV | Export complet, et import (dont l'export CSV de PokéItem, pour récupérer une collection existante). |
 
 ### P1 : forte valeur, juste après le MVP
 

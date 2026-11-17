@@ -604,7 +604,7 @@ Tailles mesurées sur des prototypes construits à partir des vraies données du
 
 ### 10.2 Scripts de mesure (dossier temporaire de la session)
 
-Ils se trouvent dans `/private/tmp/claude-501/-Users-samychenoufi-Desktop/718dba6f-5c2a-4c03-8414-be52b2119ad4/scratchpad/scripts/` : `analyse_cm.py`, `noms_singles.py`, `analyse_tcgdex_listes.py`, `scan_tcgdex_repo.py`, `valide_echantillon.py`, `noms_fr_scelles.py`, `stockage.py`, `catalogue_compact.py`, `echantillons.py`. Ils sont tous lancés avec `python3 -I`, sur des données téléchargées dans `…/scratchpad/donnees/`. Ce dossier peut être effacé au redémarrage : les recopier dans le projet si on veut les garder.
+Ils se trouvaient dans un dossier temporaire de la session (non conservé) : `analyse_cm.py`, `noms_singles.py`, `analyse_tcgdex_listes.py`, `scan_tcgdex_repo.py`, `valide_echantillon.py`, `noms_fr_scelles.py`, `stockage.py`, `catalogue_compact.py`, `echantillons.py`. Ils sont tous lancés avec `python3 -I`, sur des données téléchargées dans `…/scratchpad/donnees/`. Ce dossier peut être effacé au redémarrage : les recopier dans le projet si on veut les garder.
 
 ### 10.3 Non vérifié ou incertain
 
