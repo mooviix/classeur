@@ -19,17 +19,19 @@ function memeLot(a: NouveauLot | Possession, b: NouveauLot | Possession): boolea
     a.langue === b.langue &&
     (a.prixAchat ?? null) === (b.prixAchat ?? null) &&
     (a.dateAchat ?? null) === (b.dateAchat ?? null) &&
-    (a.valeurManuelle ?? null) === (b.valeurManuelle ?? null)
+    (a.valeurManuelle ?? null) === (b.valeurManuelle ?? null) &&
+    (a.lieu ?? null) === (b.lieu ?? null) &&
+    (a.note ?? null) === (b.note ?? null)
   );
 }
 
 /** Ajoute des exemplaires. Retourne l'id du lot (créé ou complété). */
-export async function ajouterLot(lot: NouveauLot): Promise<number> {
+export async function ajouterLot(lot: NouveauLot, options: { memoriserPrix?: boolean } = {}): Promise<number> {
   if (!(lot.quantite > 0)) throw new Error('La quantité doit être d’au moins 1.');
   return db.transaction('rw', db.possessions, db.reglages, async () => {
     const existants = await db.possessions.where('[type+ref]').equals([lot.type, lot.ref]).toArray();
     const identique = existants.find((e) => memeLot(e, lot));
-    if (lot.prixAchat != null) await db.reglages.put({ cle: 'dernier-prix-achat', valeur: lot.prixAchat });
+    if (lot.prixAchat != null && options.memoriserPrix !== false) await db.reglages.put({ cle: 'dernier-prix-achat', valeur: lot.prixAchat });
     if (identique?.id != null) {
       await db.possessions.update(identique.id, { quantite: identique.quantite + lot.quantite, modifieLe: maintenant() });
       return identique.id;
@@ -124,7 +126,7 @@ export async function annulerVente(venteId: number): Promise<void> {
       lieu: v.lieu,
       note: v.noteLot,
       valeurManuelle: v.valeurManuelle,
-    });
+    }, { memoriserPrix: false });
     await db.ventes.delete(venteId);
   });
 }

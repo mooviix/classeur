@@ -73,7 +73,8 @@ export function valoriser(d: Donnees, lot: Pick<Possession, 'type' | 'ref' | 'va
     const v = lot.valeurManuelle;
     return { unitaire: v, j1: v, j7: v, j30: v, source: 'manuelle', prix, ratio: 1 };
   }
-  const base = prix?.tendance ?? prix?.moy30 ?? null;
+  // Scellés : Cardmarket ne donne pas de moyennes ; sans tendance, on prend l'offre la plus basse (comme la fiche)
+  const base = prix?.tendance ?? prix?.moy30 ?? (obj?.type === 'scelle' ? (prix?.bas ?? null) : null);
   if (base == null) return { unitaire: null, j1: null, j7: null, j30: null, source: 'aucune', prix, ratio: 1 };
   // Une carte gradée n'a pas de décote d'état (sans cote gradée, on montre la cote de la carte brute).
   const ratio = obj?.type === 'carte' && r.decoteEtat && !lot.gradation ? ratioEtat(lot.etat, base) : 1;

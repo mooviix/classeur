@@ -73,7 +73,7 @@ export function sens(v: number | null | undefined): 'hausse' | 'baisse' | 'stabl
 /** Recherche tolérante : minuscules, sans accents, espaces normalisés. */
 export function normaliser(s: string): string {
   return s
-    .normalize('NFD')
+    .normalize('NFKD') // NFKD : « ᵉ » → « e », ligatures dépliées, accents séparés
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9/]+/g, ' ')

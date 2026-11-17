@@ -452,30 +452,29 @@ export interface ResultatsRecherche {
   scelles: Scelle[];
 }
 
-function distanceMax1(a: string, b: string): boolean {
+/** Distance d'édition (Levenshtein) ≤ max ? Calcul en bande, arrêt dès que c'est perdu. */
+function distanceMax(a: string, b: string, max: number): boolean {
   if (a === b) return true;
   const la = a.length;
   const lb = b.length;
-  if (Math.abs(la - lb) > 1) return false;
-  let i = 0;
-  let j = 0;
-  let ecarts = 0;
-  while (i < la && j < lb) {
-    if (a[i] === b[j]) {
-      i++;
-      j++;
-      continue;
+  if (Math.abs(la - lb) > max) return false;
+  let prec = Array.from({ length: lb + 1 }, (_, j) => j);
+  for (let i = 1; i <= la; i++) {
+    const cour = [i];
+    let minLigne = i;
+    for (let j = 1; j <= lb; j++) {
+      const v = Math.min(prec[j] + 1, cour[j - 1] + 1, prec[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      cour.push(v);
+      if (v < minLigne) minLigne = v;
     }
-    if (++ecarts > 1) return false;
-    if (la > lb) i++;
-    else if (lb > la) j++;
-    else {
-      i++;
-      j++;
-    }
+    if (minLigne > max) return false;
+    prec = cour;
   }
-  return ecarts + (la - i) + (lb - j) <= 1;
+  return prec[lb] <= max;
 }
+
+/** Fautes tolérées selon la longueur du mot : 0 (court), 1 (4 à 6 lettres), 2 (7 lettres et plus). */
+const fautesTolerees = (m: string) => (m.length >= 7 ? 2 : m.length >= 4 ? 1 : 0);
 
 /**
  * Recherche tolérante :
@@ -504,7 +503,9 @@ export function rechercher(d: Donnees, requete: string, limite = 60): ResultatsR
     if (cartes.length) return { cartes: trierRecents(cartes).slice(0, limite), scelles: [] };
   }
 
-  const mots = q.split(' ').filter(Boolean);
+  // « 30 ans », « 30eme ans » → « 30e anniversaire » (nom des produits et de l'extension du 30ᵉ anniversaire)
+  const qTexte = q.replace(/\b(\d+) ?(?:e|eme)? ?ans\b/g, '$1e anniversaire');
+  const mots = qTexte.split(' ').filter(Boolean);
   const score = (c: Carte): number => {
     const n = c.nomNormalise;
     if (n === q) return 0;
@@ -514,10 +515,12 @@ export function rechercher(d: Donnees, requete: string, limite = 60): ResultatsR
   };
   let cartes = d.cartes.filter((c) => mots.every((m) => c.cleRecherche.includes(m)));
   if (cartes.length === 0 && mots.length <= 3) {
-    // une faute de frappe par mot (mots de 4 lettres et plus)
+    // fautes de frappe : 1 par mot de 4 à 6 lettres, 2 au-delà (« dracofeu »)
     cartes = d.cartes.filter((c) => {
       const motsCle = c.cleRecherche.split(' ');
-      return mots.every((m) => (m.length < 4 ? c.cleRecherche.includes(m) : motsCle.some((k) => k.startsWith(m) || distanceMax1(k, m))));
+      return mots.every((m) =>
+        m.length < 4 ? c.cleRecherche.includes(m) : motsCle.some((k) => k.startsWith(m) || distanceMax(k, m, fautesTolerees(m))),
+      );
     });
   }
   const scores = new Map(cartes.map((c) => [c, score(c)]));
@@ -528,7 +531,7 @@ export function rechercher(d: Donnees, requete: string, limite = 60): ResultatsR
       a.numCourt.localeCompare(b.numCourt, 'fr', { numeric: true }),
   );
 
-  let qScelle = q;
+  let qScelle = qTexte;
   for (const [re, rempl] of ALIAS_SCELLES) qScelle = qScelle.replace(re, rempl);
   const motsScelle = qScelle.split(' ').filter(Boolean);
   const scelles = d.scelles
