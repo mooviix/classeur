@@ -1,0 +1,99 @@
+{
+ "_note": "GET https://api.tcgdex.net/v2/ja/cards/SV2a-201 (attaques retirees). Set japonais distinct (SV2a) relie a l'extension Cardmarket japonaise 5328.",
+ "category": "Pokemon",
+ "id": "SV2a-201",
+ "illustrator": "miki kudo",
+ "image": "https://assets.tcgdex.net/ja/SV/SV2a/201",
+ "localId": "201",
+ "name": "リザードンex",
+ "rarity": "Special illustration rare",
+ "set": {
+  "cardCount": {
+   "official": 165,
+   "total": 210
+  },
+  "id": "SV2a",
+  "name": "ポケモンカード151"
+ },
+ "variants": {
+  "firstEdition": false,
+  "holo": true,
+  "normal": false,
+  "reverse": false,
+  "wPromo": false
+ },
+ "variants_detailed": [
+  {
+   "type": "holo",
+   "size": "standard",
+   "thirdParty": {
+    "cardmarket": 719654
+   },
+   "variantId": "jr7oetx1mqug9",
+   "pricing": {
+    "cardmarket": {
+     "updated": "2026-11-16T22:22:55.181Z",
+     "unit": "EUR",
+     "idProduct": 719654,
+     "avg": 356.69,
+     "low": 165,
+     "trend": 306.03,
+     "avg1": 388.33,
+     "avg7": 338.98,
+     "avg30": 358.67,
+     "avg-holo": null,
+     "low-holo": null,
+     "trend-holo": 0,
+     "avg1-holo": null,
+     "avg7-holo": null,
+     "avg30-holo": null
+    },
+    "tcgplayer": null
+   }
+  }
+ ],
+ "dexId": [
+  6
+ ],
+ "hp": 330,
+ "types": [
+  "Fire"
+ ],
+ "evolveFrom": "リザード",
+ "stage": "Stage2",
+ "suffix": "EX",
+ "weaknesses": [
+  {
+   "type": "Water",
+   "value": "x2"
+  }
+ ],
+ "resistances": [],
+ "retreat": 2,
+ "regulationMark": "G",
+ "legal": {
+  "standard": false,
+  "expanded": false
+ },
+ "updated": "2026-11-12T22:12:54.751Z",
+ "pricing": {
+  "cardmarket": {
+   "updated": "2026-11-16T22:22:55.181Z",
+   "unit": "EUR",
+   "idProduct": 719654,
+   "avg": 356.69,
+   "low": 165,
+   "trend": 306.03,
+   "avg1": 388.33,
+   "avg7": 338.98,
+   "avg30": 358.67,
+   "avg-holo": null,
+   "low-holo": null,
+   "trend-holo": 0,
+   "avg1-holo": null,
+   "avg7-holo": null,
+   "avg30-holo": null
+  },
+  "tcgplayer": null
+ }
+}

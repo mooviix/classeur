@@ -1,0 +1,57 @@
+{
+ "_note": "TCGplayer via tcgcsv.com, prix en USD (marche americain). groupId 23821 = SV: Prismatic Evolutions.",
+ "prix": "GET https://tcgcsv.com/tcgplayer/3/23821/prices",
+ "extrait_prix": [
+  {
+   "productId": 593324,
+   "lowPrice": 310.0,
+   "midPrice": 505.0,
+   "highPrice": 3000.0,
+   "marketPrice": 363.93,
+   "directLowPrice": null,
+   "subTypeName": "Normal"
+  },
+  {
+   "productId": 593294,
+   "lowPrice": 10.99,
+   "midPrice": 15.0,
+   "highPrice": 124.48,
+   "marketPrice": 13.03,
+   "directLowPrice": null,
+   "subTypeName": "Normal"
+  },
+  {
+   "productId": 593324,
+   "lowPrice": 310.0,
+   "midPrice": 505.0,
+   "highPrice": 3000.0,
+   "marketPrice": 363.93,
+   "directLowPrice": null,
+   "subTypeName": "Normal"
+  }
+ ],
+ "produits": "GET https://tcgcsv.com/tcgplayer/3/23821/products",
+ "extrait_produit": {
+  "productId": 593324,
+  "name": "Prismatic Evolutions Pokemon Center Elite Trainer Box (Exclusive)",
+  "cleanName": "Prismatic Evolutions Pokemon Center Elite Trainer Box Exclusive",
+  "imageUrl": "https://tcgplayer-cdn.tcgplayer.com/product/593324_200w.jpg",
+  "categoryId": 3,
+  "groupId": 23821,
+  "url": "https://www.tcgplayer.com/product/593324/pokemon-sv-prismatic-evolutions-prismatic-evolutions-pokemon-center-elite-trainer-box-exclusive",
+  "modifiedOn": "2025-02-13T13:33:59.58",
+  "imageCount": 1,
+  "presaleInfo": {
+   "isPresale": false,
+   "releasedOn": null,
+   "note": null
+  },
+  "extendedData": [
+   {
+    "name": "CardText",
+    "value": "Eevee & Friends Light Up with Stellar Colors!<br>\r\nFrom fluffy and fiery to free..."
+   }
+  ]
+ },
+ "archives": "https://tcgcsv.com/archive/tcgplayer/prices-AAAA-MM-JJ.ppmd.7z (depuis 2024-02-08, ~2 a 4 Mo/jour, toutes categories)"
+}

@@ -23,7 +23,7 @@ PLAN = {
     "me01": 85,     # Mega-Evolution (2025)
     "base1": None,  # Set de Base (1999) complet
     "xy1": 50,      # XY (2014)
-    "cel25cc": None,  # Celebrations Collection Classique : reimpressions d'anciennes cartes
+    "cel25cc": None,  # reimpressions d anciennes cartes ; aucune image TCGdex (nov. 2026) -> ignore
 }
 FORCE_NAMES = {"Super Bonbon", "Échange"}  # dresseurs reimprimes avec la meme illustration
 SEED = 42

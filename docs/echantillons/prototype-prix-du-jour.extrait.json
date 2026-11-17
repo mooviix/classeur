@@ -1,0 +1,49 @@
+{
+ "_note": "Format propose : un tableau par idProduct. Fichier complet (cartes FR reliees + scelles, 25 973 produits) = 158 Ko en brotli.",
+ "v": 1,
+ "date": "2026-11-17",
+ "source": "Cardmarket price guide (createdAt 2026-11-17T02:51:10+0100)",
+ "champs": [
+  "trend",
+  "low",
+  "avg7",
+  "trend-holo"
+ ],
+ "unite": "centimes d'euro",
+ "p": {
+  "733794": [
+   32362,
+   19999,
+   32245,
+   0
+  ],
+  "279740": [
+   36,
+   2,
+   31,
+   186
+  ],
+  "805405": [
+   2,
+   2,
+   2,
+   10
+  ],
+  "806430": [
+   38,
+   4,
+   38,
+   16
+  ],
+  "798930": [
+   14304,
+   8400,
+   null
+  ],
+  "903955": [
+   6844,
+   5300,
+   null
+  ]
+ }
+}

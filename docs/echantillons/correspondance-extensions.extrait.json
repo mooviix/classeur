@@ -1,0 +1,89 @@
+{
+ "_note": "idExpansion Cardmarket -> set TCGdex. 298 extensions reliees (211 directes, 87 par vote) sur 796.",
+ "donnees": [
+  {
+   "idExpansion": 6704,
+   "set_tcgdex": "me06",
+   "nom_fr": "Règne Delta",
+   "nom_ja": null,
+   "source": "thirdParty du set (depot)"
+  },
+  {
+   "idExpansion": 5944,
+   "set_tcgdex": "sv08.5",
+   "nom_fr": "Évolutions Prismatiques",
+   "nom_ja": null,
+   "source": "thirdParty du set (depot)"
+  },
+  {
+   "idExpansion": 5402,
+   "set_tcgdex": "sv03.5",
+   "nom_fr": "151",
+   "nom_ja": null,
+   "source": "thirdParty du set (depot)"
+  },
+  {
+   "idExpansion": 6009,
+   "set_tcgdex": "sv08.5",
+   "nom_fr": "Évolutions Prismatiques",
+   "nom_ja": null,
+   "source": "vote des cartes"
+  },
+  {
+   "idExpansion": 5328,
+   "set_tcgdex": "SV2a",
+   "nom_fr": null,
+   "nom_ja": "ポケモンカード151",
+   "source": "thirdParty du set (depot)"
+  },
+  {
+   "idExpansion": 1523,
+   "set_tcgdex": "base1",
+   "nom_fr": "Set de Base",
+   "nom_ja": null,
+   "source": "thirdParty du set (depot)"
+  },
+  {
+   "idExpansion": 6135,
+   "set_tcgdex": "sv10.5w",
+   "nom_fr": "Flamme Blanche",
+   "nom_ja": null,
+   "source": "thirdParty du set (depot)"
+  },
+  {
+   "idExpansion": 6134,
+   "set_tcgdex": "sv10.5b",
+   "nom_fr": "Foudre Noire",
+   "nom_ja": null,
+   "source": "thirdParty du set (depot)"
+  },
+  {
+   "idExpansion": 6395,
+   "set_tcgdex": "me02.5",
+   "nom_fr": "Héros Transcendants",
+   "nom_ja": null,
+   "source": "thirdParty du set (depot)"
+  },
+  {
+   "idExpansion": 6455,
+   "set_tcgdex": "me02.5",
+   "nom_fr": "Héros Transcendants",
+   "nom_ja": null,
+   "source": "vote des cartes"
+  },
+  {
+   "idExpansion": 4786,
+   "set_tcgdex": "swsh10.5",
+   "nom_fr": "Pokémon GO",
+   "nom_ja": null,
+   "source": "thirdParty du set (depot)"
+  },
+  {
+   "idExpansion": 5051,
+   "set_tcgdex": "swsh10.5",
+   "nom_fr": "Pokémon GO",
+   "nom_ja": null,
+   "source": "vote des cartes"
+  }
+ ]
+}

@@ -1,0 +1,177 @@
+{
+ "_note": "Valeurs reelles relevees dans les captures Wayback Machine de price_guide_6.json (https://web.archive.org/web/<horodatage>id_/https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_6.json) + fichier direct du 17/11. 733794 = Dracaufeu-ex 199/165 (151), 798930 = ETB Evolutions Prismatiques, 903955 = ETB Regne Delta.",
+ "733794": [
+  {
+   "jour": "2026-11-09",
+   "createdAt": "2026-11-09T02:50:26+0100",
+   "trend": 317.02,
+   "low": 180,
+   "avg": 336.32,
+   "avg7": 332.87
+  },
+  {
+   "jour": "2026-11-11",
+   "createdAt": "2026-11-11T02:45:38+0100",
+   "trend": 313.04,
+   "low": 180,
+   "avg": 336.32,
+   "avg7": 333.58
+  },
+  {
+   "jour": "2026-11-12",
+   "createdAt": "2026-11-12T02:51:19+0100",
+   "trend": 345.17,
+   "low": 180,
+   "avg": 336.32,
+   "avg7": 346.93
+  },
+  {
+   "jour": "2026-11-13",
+   "createdAt": "2026-11-13T02:44:11+0100",
+   "trend": 343.78,
+   "low": 180,
+   "avg": 336.32,
+   "avg7": 321.77
+  },
+  {
+   "jour": "2026-11-15",
+   "createdAt": "2026-11-15T02:47:59+0100",
+   "trend": 342.79,
+   "low": 180,
+   "avg": 336.32,
+   "avg7": 330.43
+  },
+  {
+   "jour": "2026-11-16",
+   "createdAt": "2026-11-16T02:48:57+0100",
+   "trend": 332.78,
+   "low": 180,
+   "avg": 336.32,
+   "avg7": 327.93
+  },
+  {
+   "jour": "2026-11-17",
+   "createdAt": "2026-11-17T02:51:10+0100",
+   "trend": 323.62,
+   "low": 199.99,
+   "avg": 336.32,
+   "avg7": 322.45
+  }
+ ],
+ "798930": [
+  {
+   "jour": "2026-11-09",
+   "createdAt": "2026-11-09T02:50:26+0100",
+   "trend": 149.32,
+   "low": 83.9,
+   "avg": 151.99,
+   "avg7": null
+  },
+  {
+   "jour": "2026-11-11",
+   "createdAt": "2026-11-11T02:45:38+0100",
+   "trend": 148.09,
+   "low": 83.9,
+   "avg": 151.99,
+   "avg7": null
+  },
+  {
+   "jour": "2026-11-12",
+   "createdAt": "2026-11-12T02:51:19+0100",
+   "trend": 148.38,
+   "low": 83.9,
+   "avg": 151.99,
+   "avg7": null
+  },
+  {
+   "jour": "2026-11-13",
+   "createdAt": "2026-11-13T02:44:11+0100",
+   "trend": 147.95,
+   "low": 84,
+   "avg": 151.99,
+   "avg7": null
+  },
+  {
+   "jour": "2026-11-15",
+   "createdAt": "2026-11-15T02:47:59+0100",
+   "trend": 146.12,
+   "low": 84,
+   "avg": 151.99,
+   "avg7": null
+  },
+  {
+   "jour": "2026-11-16",
+   "createdAt": "2026-11-16T02:48:57+0100",
+   "trend": 143.91,
+   "low": 84,
+   "avg": 151.99,
+   "avg7": null
+  },
+  {
+   "jour": "2026-11-17",
+   "createdAt": "2026-11-17T02:51:10+0100",
+   "trend": 143.04,
+   "low": 84,
+   "avg": 151.99,
+   "avg7": null
+  }
+ ],
+ "903955": [
+  {
+   "jour": "2026-11-09",
+   "createdAt": "2026-11-09T02:50:26+0100",
+   "trend": 80.99,
+   "low": 55,
+   "avg": 95.37,
+   "avg7": null
+  },
+  {
+   "jour": "2026-11-11",
+   "createdAt": "2026-11-11T02:45:38+0100",
+   "trend": 79.61,
+   "low": 55,
+   "avg": 95.37,
+   "avg7": null
+  },
+  {
+   "jour": "2026-11-12",
+   "createdAt": "2026-11-12T02:51:19+0100",
+   "trend": 76.37,
+   "low": 52.09,
+   "avg": 95.37,
+   "avg7": null
+  },
+  {
+   "jour": "2026-11-13",
+   "createdAt": "2026-11-13T02:44:11+0100",
+   "trend": 76.37,
+   "low": 52.09,
+   "avg": 95.37,
+   "avg7": null
+  },
+  {
+   "jour": "2026-11-15",
+   "createdAt": "2026-11-15T02:47:59+0100",
+   "trend": 71.18,
+   "low": 50,
+   "avg": 95.37,
+   "avg7": null
+  },
+  {
+   "jour": "2026-11-16",
+   "createdAt": "2026-11-16T02:48:57+0100",
+   "trend": 70.03,
+   "low": 50,
+   "avg": 95.37,
+   "avg7": null
+  },
+  {
+   "jour": "2026-11-17",
+   "createdAt": "2026-11-17T02:51:10+0100",
+   "trend": 68.44,
+   "low": 53,
+   "avg": 95.37,
+   "avg7": null
+  }
+ ]
+}

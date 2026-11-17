@@ -1,0 +1,49 @@
+{
+ "_note": "GET https://api.tcgdex.net/v2/fr/sets/sv03.5 (liste des cartes tronquee). thirdParty du set (idExpansion Cardmarket) n'est PAS expose par l'API : seulement dans le depot.",
+ "cardCount": {
+  "firstEd": 0,
+  "holo": 90,
+  "normal": 135,
+  "official": 165,
+  "reverse": 158,
+  "total": 207
+ },
+ "cards": [
+  {
+   "id": "sv03.5-001",
+   "image": "https://assets.tcgdex.net/fr/sv/sv03.5/001",
+   "localId": "001",
+   "name": "Bulbizarre"
+  },
+  {
+   "id": "sv03.5-002",
+   "image": "https://assets.tcgdex.net/fr/sv/sv03.5/002",
+   "localId": "002",
+   "name": "Herbizarre"
+  },
+  {
+   "id": "sv03.5-003",
+   "image": "https://assets.tcgdex.net/fr/sv/sv03.5/003",
+   "localId": "003",
+   "name": "Florizarre-ex"
+  },
+  "... 204 autres"
+ ],
+ "id": "sv03.5",
+ "legal": {
+  "expanded": true,
+  "standard": false
+ },
+ "logo": "https://assets.tcgdex.net/fr/sv/sv03.5/logo",
+ "name": "151",
+ "releaseDate": "2023-09-22",
+ "serie": {
+  "id": "sv",
+  "name": "Écarlate et Violet"
+ },
+ "symbol": "https://assets.tcgdex.net/univ/sv/sv03.5/symbol",
+ "abbreviation": {
+  "official": "MEW",
+  "localized": "151"
+ }
+}

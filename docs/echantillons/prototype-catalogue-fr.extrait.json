@@ -1,0 +1,80 @@
+{
+ "_note": "Format propose : cartes = [index du set, numero, nom FR, index de rarete, image FR dispo, idProduct Cardmarket]. Fichier complet : 20 217 cartes, 140 Ko en brotli.",
+ "v": 1,
+ "img": "https://assets.tcgdex.net/fr/{serie}/{set}/{num}/low.webp",
+ "raretes": [
+  "Commune",
+  "Peu Commune",
+  "Rare",
+  "Ultra Rare",
+  "Promo",
+  "Magnifique rare",
+  "Holo Rare",
+  "Illustration rare",
+  "..."
+ ],
+ "sets": [
+  [
+   "sv03.5",
+   "151",
+   "sv",
+   "2023-09-22",
+   "MEW",
+   165,
+   5402
+  ],
+  [
+   "me06",
+   "Règne Delta",
+   "me",
+   "2026-11-06",
+   "DLR",
+   103,
+   6704
+  ]
+ ],
+ "cartes": [
+  [
+   163,
+   "001",
+   "Bulbizarre",
+   0,
+   1,
+   [
+    720365,
+    733596,
+    794908
+   ]
+  ],
+  [
+   163,
+   "199",
+   "Dracaufeu-ex",
+   12,
+   1,
+   [
+    733794
+   ]
+  ],
+  [
+   187,
+   "001",
+   "Scarhino",
+   0,
+   1,
+   [
+    918810
+   ]
+  ],
+  [
+   187,
+   "002",
+   "Arakdo",
+   0,
+   1,
+   [
+    918811
+   ]
+  ]
+ ]
+}

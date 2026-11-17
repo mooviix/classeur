@@ -1,0 +1,65 @@
+{
+ "requete": "{ sets @locale(lang: \\\"fr\\\") { id name releaseDate logo symbol serie { id name } cardCount { total official normal reverse holo firstEd } } }",
+ "reponse": [
+  {
+   "id": "base1",
+   "name": "Set de Base",
+   "releaseDate": "1999-01-09",
+   "logo": null,
+   "symbol": null,
+   "tcgOnline": "BS",
+   "serie": {
+    "id": "base",
+    "name": "Base"
+   },
+   "cardCount": {
+    "total": 102,
+    "official": 102,
+    "normal": 351,
+    "reverse": 0,
+    "holo": 64,
+    "firstEd": 103
+   }
+  },
+  {
+   "id": "sv08.5",
+   "name": "Évolutions Prismatiques",
+   "releaseDate": "2025-01-17",
+   "logo": "https://assets.tcgdex.net/fr/sv/sv08.5/logo",
+   "symbol": null,
+   "tcgOnline": null,
+   "serie": {
+    "id": "sv",
+    "name": "Écarlate et Violet"
+   },
+   "cardCount": {
+    "total": 180,
+    "official": 131,
+    "normal": 81,
+    "reverse": 268,
+    "holo": 127,
+    "firstEd": 0
+   }
+  },
+  {
+   "id": "me06",
+   "name": "Règne Delta",
+   "releaseDate": "2026-11-06",
+   "logo": null,
+   "symbol": null,
+   "tcgOnline": null,
+   "serie": {
+    "id": "me",
+    "name": "Méga-Évolution"
+   },
+   "cardCount": {
+    "total": 141,
+    "official": 103,
+    "normal": 0,
+    "reverse": 0,
+    "holo": 0,
+    "firstEd": 0
+   }
+  }
+ ]
+}

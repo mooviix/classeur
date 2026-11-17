@@ -1,0 +1,94 @@
+// Extraits du depot https://github.com/tcgdex/cards-database (licence MIT), commit du 15/11/2026.
+// Texte TypeScript affiche tel quel : on le LIT (regex), on ne l'execute pas.
+
+// ---- data/Mega Evolution/Delta Reign.ts (set international : thirdParty.cardmarket = idExpansion)
+import { Set } from '../../interfaces'
+import serie from '../Mega Evolution'
+
+const set: Set = {
+	id: "me06",
+
+	name: {
+		en: "Delta Reign",
+		fr: 'Règne Delta',
+		de: 'Delta-Herrschaft',
+		it: 'Dominio Delta ',
+		pt: 'Reinado Delta',
+		es: 'Dominio Delta',
+		'es-mx': 'Dominio Delta'
+	},
+
+	serie: serie,
+
+	cardCount: {
+		official: 103
+	},
+
+	releaseDate: "2026-11-06",
+
+	abbreviations: {
+		official: "DLR"
+	},
+
+	thirdParty: {
+		cardmarket: 6704,
+		tcgplayer: 24831
+	}
+}
+
+export default set
+
+// ---- data-asia/SV/SV2a.ts (set japonais 151 : idExpansion japonais)
+import { Set } from '../../interfaces'
+import serie from '../SV'
+
+const set: Set = {
+	id: 'SV2a',
+
+	name: {
+		ja: 'ポケモンカード151',
+		ko: '포켓몬 카드 151',
+		'zh-tw': '寶可夢卡牌151',
+		id: 'Kartu Pokémon 151',
+		th: 'โปเกมอนการ์ด 151'
+	},
+
+	serie: serie,
+
+	cardCount: {
+		official: 165
+	},
+
+	releaseDate: {
+		ja: '2023-06-16',
+		'zh-tw': '2023-06-30',
+		id: '2023-07-28',
+		th: '2023-07-28'
+	},
+
+	thirdParty: {
+		cardmarket: 5328
+	}
+}
+
+export default set
+
+// ---- data/Scarlet & Violet/151/199.ts (extrait : variantes et identifiants)
+import { Card } from "../../../interfaces";
+import Set from "../151";
+
+const card: Card = {
+	dexId: [6],
+	set: Set,
+	// [...]
+	variants: [
+		{
+			type: 'holo',
+			thirdParty: {
+				cardmarket: 733794,
+				tcgplayer: 517045,
+				cardtrader: 261377
+			}
+		},
+	],
+	// [...]

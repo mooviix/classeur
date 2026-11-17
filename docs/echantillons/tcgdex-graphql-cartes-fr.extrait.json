@@ -1,0 +1,113 @@
+{
+ "_note": "La langue se choisit avec la directive @locale(lang: ...). Pas de champ pricing ni thirdParty en GraphQL. variants_detailed vient d'une 2e requete (3,6 Mo).",
+ "requete": "POST https://api.tcgdex.net/v2/graphql  {\"query\":\"{ cards @locale(lang: \\\"fr\\\") { id localId name rarity category image set { id } variants { normal reverse holo firstEdition wPromo } } }\"}",
+ "reponse": {
+  "data": {
+   "cards": [
+    {
+     "id": "me06-001",
+     "localId": "001",
+     "name": "Scarhino",
+     "rarity": "Commune",
+     "category": "Pokémon",
+     "image": "https://assets.tcgdex.net/fr/me/me06/001",
+     "set": {
+      "id": "me06"
+     },
+     "variants": {
+      "normal": true,
+      "reverse": false,
+      "holo": false,
+      "firstEdition": false,
+      "wPromo": false
+     },
+     "variants_detailed": [
+      {
+       "type": "normal",
+       "subtype": null,
+       "size": "Standard",
+       "stamp": null,
+       "foil": null
+      }
+     ]
+    },
+    {
+     "id": "sv08.5-016",
+     "localId": "016",
+     "name": "Némélios",
+     "rarity": "Peu Commune",
+     "category": "Pokémon",
+     "image": "https://assets.tcgdex.net/fr/sv/sv08.5/016",
+     "set": {
+      "id": "sv08.5"
+     },
+     "variants": {
+      "normal": true,
+      "reverse": true,
+      "holo": false,
+      "firstEdition": false,
+      "wPromo": false
+     },
+     "variants_detailed": [
+      {
+       "type": "Normal",
+       "subtype": null,
+       "size": "Standard",
+       "stamp": null,
+       "foil": null
+      },
+      {
+       "type": "Reverse",
+       "subtype": null,
+       "size": "Standard",
+       "stamp": null,
+       "foil": null
+      },
+      {
+       "type": "Reverse",
+       "subtype": null,
+       "size": "Standard",
+       "stamp": null,
+       "foil": "Pokéball"
+      },
+      {
+       "type": "Reverse",
+       "subtype": null,
+       "size": "Standard",
+       "stamp": null,
+       "foil": "Masterball"
+      }
+     ]
+    },
+    {
+     "id": "sv03.5-199",
+     "localId": "199",
+     "name": "Dracaufeu-ex",
+     "rarity": "Illustration spéciale rare",
+     "category": "Pokémon",
+     "image": "https://assets.tcgdex.net/fr/sv/sv03.5/199",
+     "set": {
+      "id": "sv03.5"
+     },
+     "variants": {
+      "normal": false,
+      "reverse": false,
+      "holo": true,
+      "firstEdition": false,
+      "wPromo": false
+     },
+     "variants_detailed": [
+      {
+       "type": "Holo",
+       "subtype": null,
+       "size": "Standard",
+       "stamp": null,
+       "foil": null
+      }
+     ]
+    },
+    "... 22 339 autres (5,7 Mo en 0,65 s)"
+   ]
+  }
+ }
+}

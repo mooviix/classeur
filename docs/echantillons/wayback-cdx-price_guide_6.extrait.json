@@ -1,0 +1,71 @@
+{
+ "requete": "https://web.archive.org/cdx/search/cdx?url=downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_6.json&output=json&filter=statuscode:200",
+ "captures": 67,
+ "entete": [
+  "urlkey",
+  "timestamp",
+  "original",
+  "mimetype",
+  "statuscode",
+  "digest",
+  "length"
+ ],
+ "premieres": [
+  [
+   "com,cardmarket,s3,downloads)/productcatalog/priceguide/price_guide_6.json",
+   "20241230185748",
+   "https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_6.json",
+   "application/json",
+   "200",
+   "6CAZNRFSP7Y7R5K5UWEWD3ZV2CBSUT65",
+   "1033102"
+  ],
+  [
+   "com,cardmarket,s3,downloads)/productcatalog/priceguide/price_guide_6.json",
+   "20260617212111",
+   "https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_6.json",
+   "application/json",
+   "200",
+   "Y2DULA4B2KQFQE3QW3TVYMQA2OCVXPEC",
+   "1419569"
+  ],
+  [
+   "com,cardmarket,s3,downloads)/productcatalog/priceguide/price_guide_6.json",
+   "20260909122307",
+   "https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_6.json",
+   "application/json",
+   "200",
+   "5WPNDZXPEI7ZOZS4WQBQQ2ODEO3L6OFY",
+   "1483270"
+  ]
+ ],
+ "dernieres": [
+  [
+   "com,cardmarket,s3,downloads)/productcatalog/priceguide/price_guide_6.json",
+   "20261113163856",
+   "https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_6.json",
+   "application/json",
+   "200",
+   "UV7OAWOMLAZDNZGKORNSRQ52SSLOIJCT",
+   "1535732"
+  ],
+  [
+   "com,cardmarket,s3,downloads)/productcatalog/priceguide/price_guide_6.json",
+   "20261115122051",
+   "https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_6.json",
+   "application/json",
+   "200",
+   "VGEPM6H7SHGX3TFY7NNQ7DYAUZQDV4KK",
+   "1536462"
+  ],
+  [
+   "com,cardmarket,s3,downloads)/productcatalog/priceguide/price_guide_6.json",
+   "20261116091744",
+   "https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_6.json",
+   "application/json",
+   "200",
+   "TJDI2QEOL5GGAYT2MTYFT6ITE26PHOAK",
+   "1534389"
+  ]
+ ]
+}

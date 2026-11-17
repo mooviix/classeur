@@ -1,0 +1,13 @@
+{
+  "name": "classeur-scanner-bench",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Banc d'essai de la reconnaissance de cartes (OCR Tesseract.js, temps onnxruntime-web)",
+  "type": "module",
+  "dependencies": {
+    "@tesseract.js-data/eng": "1.0.0",
+    "@tesseract.js-data/fra": "1.0.0",
+    "onnxruntime-web": "1.31.1",
+    "tesseract.js": "7.0.0"
+  }
+}

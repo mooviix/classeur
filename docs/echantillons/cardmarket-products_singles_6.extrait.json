@@ -1,0 +1,70 @@
+{
+ "_note": "Extrait de https://downloads.s3.cardmarket.com/productCatalog/productList/products_singles_6.json (13,9 Mo, 75 742 produits, 17/11/2026). Pas de numero de carte : le nom porte les attaques entre crochets. 805405/806430/806431 = meme carte (Pyroar, Evolutions Prismatiques) : normale, reverse Poke Ball, reverse Master Ball.",
+ "version": 1,
+ "createdAt": "2026-11-16T13:56:57+0100",
+ "products": [
+  {
+   "idProduct": 733794,
+   "name": "Charizard ex [Brave Wing | Explosive Vortex]",
+   "idCategory": 51,
+   "categoryName": "Pokémon Single",
+   "idExpansion": 5402,
+   "idMetacard": 421085,
+   "dateAdded": "2023-09-22 05:57:24"
+  },
+  {
+   "idProduct": 273699,
+   "name": "Charizard [Energy Burn | Fire Spin]",
+   "idCategory": 51,
+   "categoryName": "Pokémon Single",
+   "idExpansion": 1523,
+   "idMetacard": 211560,
+   "dateAdded": "0000-00-00 00:00:00"
+  },
+  {
+   "idProduct": 719654,
+   "name": "Charizard ex [Brave Wing | Explosive Vortex]",
+   "idCategory": 51,
+   "categoryName": "Pokémon Single",
+   "idExpansion": 5328,
+   "idMetacard": 421085,
+   "dateAdded": "2023-06-20 17:22:24"
+  },
+  {
+   "idProduct": 279740,
+   "name": "Snivy [Leaf Blade]",
+   "idCategory": 51,
+   "categoryName": "Pokémon Single",
+   "idExpansion": 1571,
+   "idMetacard": 217413,
+   "dateAdded": "0000-00-00 00:00:00"
+  },
+  {
+   "idProduct": 805405,
+   "name": "Pyroar [Fire Mane | Flame Tackle]",
+   "idCategory": 51,
+   "categoryName": "Pokémon Single",
+   "idExpansion": 5944,
+   "idMetacard": 443261,
+   "dateAdded": "2025-01-09 14:09:29"
+  },
+  {
+   "idProduct": 806430,
+   "name": "Pyroar [Fire Mane | Flame Tackle]",
+   "idCategory": 51,
+   "categoryName": "Pokémon Single",
+   "idExpansion": 6009,
+   "idMetacard": 443261,
+   "dateAdded": "2025-01-17 02:06:03"
+  },
+  {
+   "idProduct": 806431,
+   "name": "Pyroar [Fire Mane | Flame Tackle]",
+   "idCategory": 51,
+   "categoryName": "Pokémon Single",
+   "idExpansion": 6009,
+   "idMetacard": 443261,
+   "dateAdded": "2025-01-17 02:06:12"
+  }
+ ]
+}

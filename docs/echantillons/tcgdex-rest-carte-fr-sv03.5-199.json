@@ -1,0 +1,145 @@
+{
+ "_note": "GET https://api.tcgdex.net/v2/fr/cards/sv03.5-199 (17/11/2026). pricing.cardmarket = ligne du price_guide_6.json de la VEILLE jointe sur thirdParty.cardmarket.",
+ "category": "Pokémon",
+ "id": "sv03.5-199",
+ "illustrator": "miki kudo",
+ "image": "https://assets.tcgdex.net/fr/sv/sv03.5/199",
+ "localId": "199",
+ "name": "Dracaufeu-ex",
+ "rarity": "Illustration spéciale rare",
+ "set": {
+  "cardCount": {
+   "official": 165,
+   "total": 207
+  },
+  "id": "sv03.5",
+  "logo": "https://assets.tcgdex.net/fr/sv/sv03.5/logo",
+  "name": "151",
+  "symbol": "https://assets.tcgdex.net/univ/sv/sv03.5/symbol"
+ },
+ "variants": {
+  "firstEdition": false,
+  "holo": true,
+  "normal": false,
+  "reverse": false,
+  "wPromo": false
+ },
+ "variants_detailed": [
+  {
+   "type": "Holo",
+   "size": "Standard",
+   "thirdParty": {
+    "cardmarket": 733794,
+    "tcgplayer": 517045,
+    "cardtrader": 261377
+   },
+   "variantId": "jr7oetx1mqug9",
+   "pricing": {
+    "cardmarket": {
+     "updated": "2026-11-16T22:22:55.179Z",
+     "unit": "EUR",
+     "idProduct": 733794,
+     "avg": 336.32,
+     "low": 180,
+     "trend": 332.78,
+     "avg1": 284.95,
+     "avg7": 327.93,
+     "avg30": 329.49,
+     "avg-holo": null,
+     "low-holo": null,
+     "trend-holo": 0,
+     "avg1-holo": null,
+     "avg7-holo": null,
+     "avg30-holo": null
+    },
+    "tcgplayer": {
+     "unit": "USD",
+     "updated": "2026-11-16T22:22:55.986Z",
+     "holofoil": {
+      "productId": 517045,
+      "lowPrice": 242.8,
+      "midPrice": 336.34,
+      "highPrice": 10000,
+      "marketPrice": 285.96,
+      "directLowPrice": 264.99
+     }
+    }
+   }
+  }
+ ],
+ "dexId": [
+  6
+ ],
+ "hp": 330,
+ "types": [
+  "Feu"
+ ],
+ "evolveFrom": "Reptincel",
+ "stage": "Niveau 2",
+ "suffix": "ex",
+ "attacks": [
+  {
+   "cost": [
+    "Feu"
+   ],
+   "name": "Aile de Bravoure",
+   "effect": "Si au moins un marqueur de dégâts est placé sur ce Pokémon, cette attaque inflige 100 dégâts supplémentaires.",
+   "damage": "60+"
+  },
+  {
+   "cost": [
+    "Feu",
+    "Feu",
+    "Feu",
+    "Feu"
+   ],
+   "name": "Vortex Explosif",
+   "effect": "Défaussez 3 Énergies de ce Pokémon.",
+   "damage": 330
+  }
+ ],
+ "weaknesses": [
+  {
+   "type": "Eau",
+   "value": "×2"
+  }
+ ],
+ "retreat": 2,
+ "regulationMark": "G",
+ "legal": {
+  "standard": false,
+  "expanded": true
+ },
+ "updated": "2026-06-09T12:54:48+01:00",
+ "pricing": {
+  "cardmarket": {
+   "updated": "2026-11-16T22:22:55.179Z",
+   "unit": "EUR",
+   "idProduct": 733794,
+   "avg": 336.32,
+   "low": 180,
+   "trend": 332.78,
+   "avg1": 284.95,
+   "avg7": 327.93,
+   "avg30": 329.49,
+   "avg-holo": null,
+   "low-holo": null,
+   "trend-holo": 0,
+   "avg1-holo": null,
+   "avg7-holo": null,
+   "avg30-holo": null
+  },
+  "tcgplayer": {
+   "unit": "USD",
+   "updated": "2026-11-16T22:22:55.986Z",
+   "holofoil": {
+    "productId": 517045,
+    "lowPrice": 242.8,
+    "midPrice": 336.34,
+    "highPrice": 10000,
+    "marketPrice": 285.96,
+    "directLowPrice": 264.99
+   }
+  }
+ }
+}

@@ -1,0 +1,117 @@
+{
+ "_note": "Noms FR generes automatiquement (heuristique, a completer par un fichier de corrections manuelles).",
+ "donnees": [
+  {
+   "idProduct": 776325,
+   "nom_cardmarket": "Stellar Crown Booster Box",
+   "statut": "set FR par extension",
+   "nom_fr_genere": "Display Couronne Stellaire",
+   "type_fr": "Display"
+  },
+  {
+   "idProduct": 784945,
+   "nom_cardmarket": "Surging Sparks Booster",
+   "statut": "set FR par extension",
+   "nom_fr_genere": "Booster Étincelles Déferlantes",
+   "type_fr": "Booster"
+  },
+  {
+   "idProduct": 794914,
+   "nom_cardmarket": "Generations Start Decks: Pikachu ex & Snorlax ex",
+   "statut": "set FR par nom anglais",
+   "nom_fr_genere": "Générations — Start Decks: Pikachu ex & Ronflex ex",
+   "type_fr": null
+  },
+  {
+   "idProduct": 798930,
+   "nom_cardmarket": "Prismatic Evolutions Elite Trainer Box",
+   "statut": "set FR par extension",
+   "nom_fr_genere": "Coffret Dresseur d'Élite Évolutions Prismatiques",
+   "type_fr": "Coffret Dresseur d'Élite"
+  },
+  {
+   "idProduct": 798945,
+   "nom_cardmarket": "Prismatic Evolutions Binder Collection",
+   "statut": "set FR par extension",
+   "nom_fr_genere": "Collection Classeur Évolutions Prismatiques",
+   "type_fr": "Collection Classeur"
+  },
+  {
+   "idProduct": 824107,
+   "nom_cardmarket": "Black Bolt Booster Bundle",
+   "statut": "set FR par extension",
+   "nom_fr_genere": "Bundle de 6 boosters Foudre Noire",
+   "type_fr": "Bundle de 6 boosters"
+  },
+  {
+   "idProduct": 836279,
+   "nom_cardmarket": "White Flare: Tech Sticker Collection Display",
+   "statut": "set FR par extension",
+   "nom_fr_genere": "Tripack Flamme Blanche — Collection Display",
+   "type_fr": "Tripack"
+  },
+  {
+   "idProduct": 846744,
+   "nom_cardmarket": "Phantasmal Flames Elite Trainer Box",
+   "statut": "set FR par extension",
+   "nom_fr_genere": "Coffret Dresseur d'Élite Flammes Fantasmagoriques",
+   "type_fr": "Coffret Dresseur d'Élite"
+  },
+  {
+   "idProduct": 860571,
+   "nom_cardmarket": "Ascended Heroes: Zorua Mini Tin",
+   "statut": "set FR par extension",
+   "nom_fr_genere": "Mini Pokébox Héros Transcendants — Zorua",
+   "type_fr": "Mini Pokébox"
+  },
+  {
+   "idProduct": 864109,
+   "nom_cardmarket": "Ascended Heroes: Mega Feraligatr ex Box",
+   "statut": "set FR par extension",
+   "nom_fr_genere": "Coffret Héros Transcendants — Méga-Feraligatr ex",
+   "type_fr": "Coffret"
+  },
+  {
+   "idProduct": 865394,
+   "nom_cardmarket": "Perfect Order 10 Elite Trainer Box Case",
+   "statut": "set FR par extension",
+   "nom_fr_genere": "Carton de 10 Coffrets Dresseur d'Élite Équilibre Parfait — Case",
+   "type_fr": "Carton de 10 Coffrets Dresseur d'Élite"
+  },
+  {
+   "idProduct": 903955,
+   "nom_cardmarket": "Delta Reign Elite Trainer Box",
+   "statut": "set FR par extension",
+   "nom_fr_genere": "Coffret Dresseur d'Élite Règne Delta",
+   "type_fr": "Coffret Dresseur d'Élite"
+  },
+  {
+   "idProduct": 923334,
+   "nom_cardmarket": "Mega Gengar ex, Mega Dragonite ex & Mega Feraligatr ex Special Deck Set: Dragonite Coin",
+   "statut": "inconnu",
+   "nom_fr_genere": null,
+   "type_fr": "Pièce"
+  },
+  {
+   "idProduct": 923335,
+   "nom_cardmarket": "Mega Gengar ex, Mega Dragonite ex & Mega Feraligatr ex Special Deck Set: Feraligatr Coin",
+   "statut": "inconnu",
+   "nom_fr_genere": null,
+   "type_fr": "Pièce"
+  },
+  {
+   "idProduct": 923336,
+   "nom_cardmarket": "Mega Gengar ex, Mega Dragonite ex & Mega Feraligatr ex Special Deck Set: Gengar Coin",
+   "statut": "inconnu",
+   "nom_fr_genere": null,
+   "type_fr": "Pièce"
+  },
+  {
+   "idProduct": 923872,
+   "nom_cardmarket": "Pokémon TCG Valentine’s Box",
+   "statut": "inconnu",
+   "nom_fr_genere": null,
+   "type_fr": "Coffret"
+  }
+ ]
+}
