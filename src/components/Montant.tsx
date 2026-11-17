@@ -52,7 +52,13 @@ export function Montant({
       if (k < 1) raf = requestAnimationFrame(pas);
     };
     raf = requestAnimationFrame(pas);
-    return () => cancelAnimationFrame(raf);
+    // Secours : si les animations sont suspendues (onglet en arrière-plan, économie d'énergie), on affiche quand même
+    // la vraie valeur à la fin de la durée prévue.
+    const secours = window.setTimeout(() => setAffiche(arrivee), duree + 150);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(secours);
+    };
   }, [valeur, anime, masques]);
 
   if (masques) {
