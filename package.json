@@ -13,7 +13,10 @@
     "build": "tsc --noEmit -p tsconfig.json && vite build",
     "preview": "vite preview --host",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "icones": "pwa-assets-generator --preset minimal-2023 public/icons/icone.svg"
+    "icones": "pwa-assets-generator --preset minimal-2023 public/icons/icone.svg",
+    "donnees": "node scripts/donnees/construire.ts",
+    "donnees:amorcer": "node scripts/donnees/amorcer-wayback.ts",
+    "donnees:verifier": "node scripts/donnees/verifier.ts"
   },
   "dependencies": {
     "@fontsource-variable/archivo": "^5.3.0",

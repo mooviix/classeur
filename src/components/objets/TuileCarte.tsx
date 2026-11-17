@@ -11,8 +11,8 @@ interface Props {
   quantite?: number;
   /** Cote affichée sous la carte (euros), null = pas de cote. Absent = rien d'affiché. */
   prix?: number | null;
-  /** Rendu d'une carte non possédée : pochette vide avec son numéro, ou image en transparence. */
-  manquante?: 'vide' | 'transparente';
+  /** Rendu d'une carte non possédée : pochette vide avec son numéro, image en transparence, ou image normale (recherche). */
+  manquante?: 'vide' | 'transparente' | 'visible';
   /** Boutons rapides + / − (ajout avec les réglages par défaut, retrait du dernier exemplaire). */
   onPlus?: () => void;
   onMoins?: () => void;

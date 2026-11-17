@@ -31,7 +31,7 @@ export function Feuille({ ouverte, onFermer, titre, children, pied }: Props) {
       onClick={(e) => {
         if (e.target === ref.current) onFermer(); // clic sur le fond
       }}
-      className="feuille m-0 mt-auto w-full max-w-none bg-transparent p-0 backdrop:bg-encre/40 backdrop:backdrop-blur-[2px] sm:mx-auto sm:max-w-xl"
+      className="feuille m-0 mt-auto w-full max-w-none bg-transparent p-0 backdrop:bg-[rgb(6_10_22/0.5)] backdrop:backdrop-blur-[2px] sm:mx-auto sm:max-w-xl"
     >
       <div className="pb-sur flex max-h-[88dvh] flex-col rounded-t-feuille bg-surface text-encre">
         <div className="flex items-center gap-2 px-4 pt-3 pb-2">

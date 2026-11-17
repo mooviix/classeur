@@ -6,6 +6,7 @@ import { useReglages, type Reglages } from '../db/reglages';
 import type { Etat, Possession } from '../db/schema';
 import {
   chargerHistorique,
+  debutSuiviContinu,
   groupeCarte,
   groupeScelle,
   prixCarte,
@@ -176,7 +177,10 @@ export async function calculerCourbeCollection(d: Donnees, lots: Possession[], r
 
   const jours = new Set<string>();
   for (const f of fichiers.values()) f?.jours.forEach((j) => jours.add(j));
-  const tousJours = [...jours].sort();
+  const tri = [...jours].sort();
+  // seulement le suivi continu le plus récent (pas de trait entre deux relevés isolés à des mois d'écart)
+  const debut = debutSuiviContinu(tri) ?? '';
+  const tousJours = tri.filter((j) => j >= debut);
   if (tousJours.length === 0) return [];
   const totaux = new Array<number>(tousJours.length).fill(0);
   let fixe = 0;
@@ -204,9 +208,20 @@ export async function calculerCourbeCollection(d: Donnees, lots: Possession[], r
     const serie = f?.p[String(cm)];
     const valeurs = holo ? serie?.th : serie?.t;
     if (!f || !valeurs) continue;
-    // valeurs alignées sur f.jours → report sur l'axe commun, en prolongeant la dernière valeur connue
+    // valeurs alignées sur f.jours → report sur l'axe commun, en prolongeant la dernière valeur connue.
+    // Avant le premier prix connu (produit sorti en cours de période, ou suivi commencé plus tard), on reprend ce
+    // premier prix : sinon l'objet « entrerait » dans la courbe d'un coup et créerait un faux saut.
     let derniere: number | null = null;
-    let k = 0;
+    for (let k = 0; k < valeurs.length; k++) {
+      const v = valeurs[k];
+      if (f.jours[k] >= tousJours[0] && typeof v === 'number' && v > 0) {
+        derniere = v / 100;
+        break;
+      }
+    }
+    // on ignore les relevés isolés d'avant le suivi continu
+    let k = f.jours.findIndex((j) => j >= tousJours[0]);
+    if (k < 0) k = f.jours.length;
     for (let i = 0; i < tousJours.length; i++) {
       while (k < f.jours.length && f.jours[k] <= tousJours[i]) {
         const v = valeurs[k];

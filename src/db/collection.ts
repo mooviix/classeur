@@ -91,6 +91,10 @@ export async function vendre(id: number, infos: InfosVente): Promise<number> {
       prixVente: infos.prixVente,
       frais: infos.frais,
       prixAchat: lot.prixAchat,
+      dateAchat: lot.dateAchat,
+      lieu: lot.lieu,
+      noteLot: lot.note,
+      valeurManuelle: lot.valeurManuelle,
       date: infos.date ?? aujourdhui(),
       plateforme: infos.plateforme,
       note: infos.note,
@@ -116,6 +120,10 @@ export async function annulerVente(venteId: number): Promise<void> {
       gradation: v.gradation,
       langue: v.langue,
       prixAchat: v.prixAchat,
+      dateAchat: v.dateAchat,
+      lieu: v.lieu,
+      note: v.noteLot,
+      valeurManuelle: v.valeurManuelle,
     });
     await db.ventes.delete(venteId);
   });

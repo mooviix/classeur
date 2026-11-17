@@ -62,6 +62,8 @@ export interface Carte {
   illustrateur: string | null;
   /** Clé de recherche normalisée */
   cleRecherche: string;
+  /** Nom seul, normalisé (tri des résultats) */
+  nomNormalise: string;
   /** Numéro sans zéros devant, pour comparer « 25 » et « 025 » */
   numCourt: string;
 }
@@ -169,6 +171,7 @@ function construire(meta: FichierMeta, cat: FichierCatalogue, sc: FichierScelles
       dex,
       illustrateur: illusIdx >= 0 ? (cat.illustrateurs[illusIdx] ?? null) : null,
       cleRecherche: normaliser(`${nom} ${ext.nom} ${ext.code ?? ''}`),
+      nomNormalise: normaliser(nom),
       numCourt: numCourt(num),
     };
     ext.cartes.push(carte);
@@ -370,15 +373,31 @@ export function useHistorique(groupe: string | null): FichierHistorique | null |
 }
 
 /** Série de prix (euros) d'un produit dans un historique. */
+/** Écart maximal (jours) entre deux relevés pour qu'ils fassent partie du même suivi continu. */
+const ECART_MAX_SUIVI = 10;
+
+/**
+ * Premier jour du suivi continu le plus récent. L'historique contient quelques relevés isolés venus d'archives
+ * (30 déc. 2024, 17 juin 2026), séparés de plusieurs mois du suivi quotidien : les relier d'un trait inventerait
+ * une évolution. On ne garde donc que la partie continue la plus récente.
+ */
+export function debutSuiviContinu(jours: readonly string[]): string | null {
+  if (jours.length === 0) return null;
+  let debut = jours.length - 1;
+  while (debut > 0 && (Date.parse(jours[debut]) - Date.parse(jours[debut - 1])) / 86_400_000 <= ECART_MAX_SUIVI) debut--;
+  return jours[debut];
+}
+
 export function serieProduit(h: FichierHistorique | null | undefined, cm: number, holo = false): Point[] {
   if (!h || !cm) return [];
   const s = h.p[String(cm)];
   const valeurs = holo ? s?.th : s?.t;
   if (!valeurs) return [];
+  const debut = debutSuiviContinu(h.jours) ?? '';
   const pts: Point[] = [];
   h.jours.forEach((d, i) => {
     const v = valeurs[i];
-    if (typeof v === 'number' && v > 0) pts.push({ d, v: v / 100 });
+    if (d >= debut && typeof v === 'number' && v > 0) pts.push({ d, v: v / 100 });
   });
   return pts;
 }
@@ -453,9 +472,8 @@ export function rechercher(d: Donnees, requete: string, limite = 60): ResultatsR
   }
 
   const mots = q.split(' ').filter(Boolean);
-  const nomNorm = (c: Carte) => normaliser(c.nom);
   const score = (c: Carte): number => {
-    const n = nomNorm(c);
+    const n = c.nomNormalise;
     if (n === q) return 0;
     if (n.startsWith(q)) return 1;
     if (n.includes(q)) return 2;
@@ -469,7 +487,13 @@ export function rechercher(d: Donnees, requete: string, limite = 60): ResultatsR
       return mots.every((m) => (m.length < 4 ? c.cleRecherche.includes(m) : motsCle.some((k) => k.startsWith(m) || distanceMax1(k, m))));
     });
   }
-  cartes.sort((a, b) => score(a) - score(b) || (b.ext.sortie ?? '').localeCompare(a.ext.sortie ?? '') || a.numCourt.localeCompare(b.numCourt, 'fr', { numeric: true }));
+  const scores = new Map(cartes.map((c) => [c, score(c)]));
+  cartes.sort(
+    (a, b) =>
+      scores.get(a)! - scores.get(b)! ||
+      (b.ext.sortie ?? '').localeCompare(a.ext.sortie ?? '') ||
+      a.numCourt.localeCompare(b.numCourt, 'fr', { numeric: true }),
+  );
 
   let qScelle = q;
   for (const [re, rempl] of ALIAS_SCELLES) qScelle = qScelle.replace(re, rempl);

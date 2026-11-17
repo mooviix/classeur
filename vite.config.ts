@@ -39,10 +39,20 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
           {
-            // Données du jour (catalogue, prix, historique) : on affiche le cache tout de suite, on rafraîchit derrière.
+            // Pointeur vers les fichiers du jour : toujours le réseau d'abord, le cache si hors ligne.
+            urlPattern: ({ url }) => url.pathname.endsWith('/data/meta.json'),
+            handler: 'NetworkFirst',
+            options: { cacheName: 'donnees-meta', networkTimeoutSeconds: 4 },
+          },
+          {
+            // Catalogue, prix du jour, historiques : URLs versionnées (nom avec empreinte ou ?v=date) → cache d'abord.
             urlPattern: ({ url }) => url.pathname.includes('/data/'),
-            handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'donnees', expiration: { maxEntries: 400 } },
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'donnees',
+              expiration: { maxEntries: 600, maxAgeSeconds: 60 * 60 * 24 * 60 },
+              cacheableResponse: { statuses: [200] },
+            },
           },
           {
             urlPattern: ({ url }) => url.hostname === 'assets.tcgdex.net',
@@ -54,7 +64,8 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: ({ url }) => url.hostname === 'product-images.s3.cardmarket.com',
+            // Images des scellés : Poképédia (boîtes FR) et CDN TCGplayer (le CDN Cardmarket exige un Referer : inutilisable).
+            urlPattern: ({ url }) => url.hostname === 'www.pokepedia.fr' || url.hostname === 'tcgplayer-cdn.tcgplayer.com',
             handler: 'CacheFirst',
             options: {
               cacheName: 'images-scelles',

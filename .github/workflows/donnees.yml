@@ -1,0 +1,175 @@
+# Données de prix (Cardmarket + TCGdex) chaque nuit, puis build et déploiement de l'app sur GitHub Pages.
+#
+# - Le guide des prix Cardmarket sort chaque nuit vers 02 h 45–02 h 51 (heure de Paris). Deux passages : 02:23 UTC
+#   (03 h 23 en hiver, 04 h 23 en été) et 08:23 UTC en rattrapage. Le second ne fait rien si le guide est déjà traité.
+# - L'état (historiques, prix des 7 derniers jours, catalogue, dernier guide traité = meta.json) vit dans la branche
+#   orpheline `donnees`, réécrite à chaque fois en UN seul commit (push forcé) : le dépôt ne grossit pas.
+# - Les téléchargements (.cache/) passent par le cache d'Actions (au mieux : tout se reconstruit sans lui).
+# - Premier passage (pas encore de branche `donnees`) : l'historique est amorcé avec les captures Wayback (~5 min).
+name: Données et déploiement
+
+on:
+  schedule:
+    - cron: '23 2 * * *'
+    - cron: '23 8 * * *'
+  workflow_dispatch:
+    inputs:
+      forcer:
+        description: 'Retraiter le guide même s’il est déjà traité'
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+
+permissions:
+  contents: write # push de la branche `donnees`
+  pages: write
+  id-token: write
+
+# Un seul passage à la fois (deux passages ne doivent jamais écrire l'état en même temps).
+concurrency:
+  group: donnees
+  cancel-in-progress: false
+
+jobs:
+  construire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      deployer: ${{ steps.decision.outputs.deployer }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+
+      - name: Restaurer le cache des téléchargements
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache
+          key: donnees-cache-${{ github.run_id }}
+          restore-keys: donnees-cache-
+
+      # Cache à part pour le scanner (images des cartes, lourdes) : il n'est resauvé que si le catalogue change.
+      - name: Restaurer le cache du scanner
+        uses: actions/cache/restore@v4
+        with:
+          path: .cache/scan
+          key: scan-cache-${{ github.run_id }}
+          restore-keys: scan-cache-
+
+      - name: Restaurer l'état (branche donnees)
+        id: etat
+        run: |
+          mkdir -p public/data
+          if git ls-remote --exit-code --heads origin donnees > /dev/null; then
+            git fetch --quiet --depth 1 origin donnees
+            git archive FETCH_HEAD | tar -x -C public/data
+            echo "premier=false" >> "$GITHUB_OUTPUT"
+            echo "État restauré : $(jq -r '.datePrix + " (historique " + .historique.debut + " → " + .historique.fin + ")"' public/data/meta.json)"
+          else
+            echo "premier=true" >> "$GITHUB_OUTPUT"
+            echo "Pas encore de branche donnees : premier passage."
+          fi
+
+      - name: Construire les données
+        id: donnees
+        run: node scripts/donnees/construire.ts ${{ inputs.forcer && '--forcer' || '' }}
+
+      - name: Amorcer l'historique (captures Wayback, premier passage seulement)
+        if: steps.etat.outputs.premier == 'true'
+        # Un bonus : si la Wayback Machine refuse, on publie quand même (historique à partir d'aujourd'hui).
+        continue-on-error: true
+        run: node scripts/donnees/amorcer-wayback.ts
+
+      - name: Décider de la suite
+        id: decision
+        run: |
+          if [ "${{ steps.donnees.outputs.nouveau }}" = "true" ] || [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "deployer=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "deployer=false" >> "$GITHUB_OUTPUT"
+            echo "Guide déjà traité : rien à publier."
+          fi
+
+      - name: Empreintes du scanner (optionnel)
+        if: steps.decision.outputs.deployer == 'true'
+        # Script d'un autre module : s'il échoue, on publie quand même (les empreintes précédentes restent valables).
+        continue-on-error: true
+        run: if [ -f scripts/scan/construire.ts ]; then node scripts/scan/construire.ts; fi
+
+      - name: Champ « scan » de meta.json (d'après data/scan/manifeste.json)
+        if: steps.decision.outputs.deployer == 'true'
+        run: node scripts/donnees/construire.ts --meta
+
+      - name: Sauver le cache du scanner
+        if: steps.decision.outputs.deployer == 'true' && hashFiles('scripts/scan/construire.ts') != ''
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: .cache/scan
+          key: scan-cache-${{ hashFiles('public/data/catalogue-fr.*.json') }}
+
+      - name: Vérifier les fichiers (contrat src/data/types.ts)
+        if: steps.decision.outputs.deployer == 'true'
+        run: node scripts/donnees/verifier.ts
+
+      - name: Sauver l'état (branche donnees, un seul commit)
+        if: steps.decision.outputs.deployer == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          etat="$RUNNER_TEMP/etat"
+          rm -rf "$etat" && mkdir -p "$etat"
+          cp -R public/data/. "$etat/"
+          rm -f "$etat/.gitkeep"
+          cd "$etat"
+          git init --quiet --initial-branch=donnees
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          git commit --quiet -m "Données du $(jq -r .datePrix meta.json) (guide $(jq -r .createdAt meta.json))"
+          git push --quiet --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:refs/heads/donnees
+          echo "Branche donnees : $(du -sh . | cut -f1), $(git ls-files | wc -l) fichiers"
+
+      - name: Sauver le cache des téléchargements
+        if: steps.decision.outputs.deployer == 'true'
+        uses: actions/cache/save@v4
+        with:
+          # Le clone du dépôt TCGdex (≈ 15 s à refaire) et les captures Wayback ne sont pas gardés.
+          path: |
+            .cache
+            !.cache/tcgdex/depot
+            !.cache/wayback
+            !.cache/scan
+          key: donnees-cache-${{ github.run_id }}
+
+      - name: Build de l'app
+        if: steps.decision.outputs.deployer == 'true'
+        run: |
+          npm ci
+          npm run build
+          rm -rf dist/data
+          cp -R public/data dist/data
+          rm -f dist/data/.gitkeep
+          echo "Site : $(du -sh dist | cut -f1) dont données $(du -sh dist/data | cut -f1)"
+
+      - name: Préparer l'artefact GitHub Pages
+        if: steps.decision.outputs.deployer == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deployer:
+    needs: construire
+    if: needs.construire.outputs.deployer == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - name: Déployer sur GitHub Pages
+        id: deploiement
+        uses: actions/deploy-pages@v4

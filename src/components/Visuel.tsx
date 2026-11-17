@@ -44,7 +44,11 @@ export function Visuel({ src, alt, forme = 'carte', vide, repli, className = '',
             vide ? 'border border-dashed border-trait' : ''
           } ${forme === 'carte' ? 'coins-carte' : 'rounded-pochette'}`}
         >
-          {repli && <span className="etroit chiffres text-petit font-semibold text-encre-3">{repli}</span>}
+          {repli && (
+            <span className="etroit chiffres line-clamp-3 px-1.5 text-center text-micro leading-tight font-semibold break-words text-encre-3">
+              {repli}
+            </span>
+          )}
         </div>
       )}
       {/* reflet de la pochette plastique, très léger */}

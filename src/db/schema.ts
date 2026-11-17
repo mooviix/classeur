@@ -91,6 +91,11 @@ export interface Vente {
   frais?: number;
   /** Prix d'achat PAR UNITÉ du lot vendu (copie), s'il était connu. */
   prixAchat?: number;
+  /** Copies des autres infos du lot vendu, pour le remettre à l'identique si la vente est annulée. */
+  dateAchat?: string;
+  lieu?: string;
+  noteLot?: string;
+  valeurManuelle?: number;
   /** 'YYYY-MM-DD' */
   date: string;
   plateforme?: string;
