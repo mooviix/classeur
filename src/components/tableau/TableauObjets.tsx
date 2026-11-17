@@ -2,8 +2,8 @@ import { ArrowDown, ArrowUp } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link } from 'wouter';
 import { euros, pourcent } from '../../lib/format';
+import { useMontantsMasques } from '../../lib/montants';
 import { Bouton } from '../Bouton';
-import { Montant } from '../Montant';
 import { couleurSens } from './Section';
 
 /** Une ligne du tableau d'analyse : un objet (carte + variante, ou scellé), tous lots confondus. */
@@ -28,12 +28,35 @@ type CleTri = 'nom' | 'quantite' | 'achat' | 'cote' | 'gain';
 
 const COLONNES: ReadonlyArray<{ cle: CleTri; nom: string; titre: string; classe: string }> = [
   { cle: 'nom', nom: 'Objet', titre: 'Objet', classe: 'text-left' },
-  // Largeurs mesurées en police étroite : « 9 999,99 € » fait 52 px, « +9 999,99 € » en gras 56 px ; + 6 px d'écart.
-  { cle: 'quantite', nom: 'Qté', titre: 'Quantité', classe: 'w-8 text-right' },
+  // Largeurs mesurées en Instrument Sans 13 px, chiffres alignés : « 999,99 € » fait 54 px, « +999,99 € » en gras 62 px
+  // (au-delà de 1 000 €, montants à l'euro : « 9 999 € » est plus court) ; + 6 px d'écart.
+  { cle: 'quantite', nom: 'Qté', titre: 'Quantité', classe: 'w-7 text-right' },
   { cle: 'achat', nom: 'Achat', titre: "Prix d'achat à l'unité", classe: 'w-15 pl-1.5 text-right' },
   { cle: 'cote', nom: 'Cote', titre: "Cote à l'unité", classe: 'w-15 pl-1.5 text-right' },
-  { cle: 'gain', nom: 'Gain', titre: 'Gain total', classe: 'w-16 pl-1.5 text-right' },
+  { cle: 'gain', nom: 'Gain', titre: 'Gain total', classe: 'w-[4.375rem] pl-1.5 text-right' },
 ];
+
+const fmtRond = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+
+/** Montant d'une cellule : au centime sous 1 000 €, à l'euro au-delà (« 1 377 € »), pour tenir dans sa colonne. */
+function court(v: number, signe = false): string {
+  const a = Math.abs(v);
+  const texte = a >= 1000 ? fmtRond.format(a).replace(/\u202f/g, '\u00a0') : euros(a);
+  if (a < 0.005) return texte;
+  return v < 0 ? `−${texte}` : signe ? `+${texte}` : texte;
+}
+
+/** Comme <Montant> (masqué par l'œil de l'accueil), au format court des cellules. */
+function MontantCellule({ valeur, signe, className = '' }: { valeur: number; signe?: boolean; className?: string }) {
+  const masques = useMontantsMasques();
+  return masques ? (
+    <span className={className} aria-label="Montant masqué">
+      •••• €
+    </span>
+  ) : (
+    <span className={className}>{court(valeur, signe)}</span>
+  );
+}
 
 const PAS = 25;
 
@@ -66,7 +89,7 @@ export function TableauObjets({ lignes, legende }: { lignes: LigneAnalyse[]; leg
       <table className="w-full table-fixed text-petit">
         <caption className="sr-only">{legende}. Prix d’achat et cote à l’unité, gain sur les exemplaires dont le prix d’achat est connu.</caption>
         <thead>
-          <tr className="text-micro text-encre-2">
+          <tr className="text-xs text-encre-2">
             {COLONNES.map((c) => {
               const actif = tri.cle === c.cle;
               const Fleche = tri.desc ? ArrowDown : ArrowUp;
@@ -81,7 +104,7 @@ export function TableauObjets({ lignes, legende }: { lignes: LigneAnalyse[]; leg
                     type="button"
                     onClick={() => trier(c.cle)}
                     title={c.titre}
-                    className={`inline-flex min-h-10 w-full items-center gap-0.5 ${
+                    className={`inline-flex min-h-10 w-full items-center gap-0.5 transition-opacity active:opacity-60 ${
                       c.cle === 'nom' ? 'justify-start' : 'justify-end'
                     } ${actif ? 'font-semibold text-encre' : ''}`}
                   >
@@ -96,33 +119,33 @@ export function TableauObjets({ lignes, legende }: { lignes: LigneAnalyse[]; leg
         <tbody>
           {triees.slice(0, limite).map((l) => (
             <tr key={l.cle} className="border-t border-trait align-top">
-              <td className="py-2 pr-2">
+              <td className="py-2.5 pr-2">
                 {l.href ? (
-                  <Link href={l.href} className="block active:opacity-70">
+                  <Link href={l.href} className="block transition-opacity active:opacity-60">
                     <span className="line-clamp-2 leading-snug font-semibold">{l.nom}</span>
-                    <span className="block truncate text-micro text-encre-2">{l.detail}</span>
+                    <span className="mt-0.5 block truncate text-micro text-encre-2">{l.detail}</span>
                   </Link>
                 ) : (
                   <>
                     <span className="line-clamp-2 leading-snug font-semibold">{l.nom}</span>
-                    <span className="block truncate text-micro text-encre-2">{l.detail}</span>
+                    <span className="mt-0.5 block truncate text-micro text-encre-2">{l.detail}</span>
                   </>
                 )}
               </td>
-              <td className="chiffres py-2 text-right">{l.quantite}</td>
-              <td className="etroit chiffres py-2 pl-1.5 text-right whitespace-nowrap">
-                {l.achat == null ? <span className="text-encre-3">—</span> : <Montant valeur={l.achat} />}
+              <td className="chiffres py-2.5 text-right">{l.quantite}</td>
+              <td className="chiffres py-2.5 pl-1.5 text-right whitespace-nowrap">
+                {l.achat == null ? <span className="text-encre-3">—</span> : <MontantCellule valeur={l.achat} />}
               </td>
-              <td className="etroit chiffres py-2 pl-1.5 text-right whitespace-nowrap">
-                {l.cote == null ? <span className="text-encre-3">—</span> : euros(l.cote)}
+              <td className="chiffres py-2.5 pl-1.5 text-right whitespace-nowrap">
+                {l.cote == null ? <span className="text-encre-3">—</span> : court(l.cote)}
               </td>
-              <td className="etroit chiffres py-2 pl-1.5 text-right whitespace-nowrap">
+              <td className="chiffres py-2.5 pl-1.5 text-right whitespace-nowrap">
                 {l.gain == null ? (
                   <span className="text-encre-3">—</span>
                 ) : (
                   <>
-                    <Montant valeur={l.gain} signe className={`block font-semibold ${couleurSens(l.gain)}`} />
-                    {l.ratio != null && <span className={`block text-micro ${couleurSens(l.gain)}`}>{pourcent(l.ratio)}</span>}
+                    <MontantCellule valeur={l.gain} signe className={`block font-semibold ${couleurSens(l.gain)}`} />
+                    {l.ratio != null && <span className={`mt-0.5 block text-micro ${couleurSens(l.gain)}`}>{pourcent(l.ratio)}</span>}
                   </>
                 )}
               </td>

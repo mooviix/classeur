@@ -39,7 +39,7 @@ export function ListeLots({ objet, lots }: Props) {
       {lots.length > 0 && (
         <section aria-label="Mes exemplaires">
           <TitreSection droite={<span className="chiffres">{total > 1 ? `${total} exemplaires` : '1 exemplaire'}</span>}>Mes exemplaires</TitreSection>
-          <ul className="border-t border-trait">
+          <ul className="bloc divide-y divide-grille">
             {tries.map((lot) => (
               <LigneLot key={lot.id} lot={lot} objet={objet} onModifier={() => ouvrir('modifier', lot)} onVendre={() => ouvrir('vendre', lot)} />
             ))}
@@ -73,39 +73,37 @@ function LigneLot({ lot, objet, onModifier, onVendre }: { lot: Possession; objet
   };
 
   return (
-    <li className="border-b border-trait py-3">
+    <li className="px-4 py-3.5">
       <div className="flex items-start gap-3">
-        <span className="chiffres etroit mt-px min-w-9 rounded-md bg-surface-2 px-1.5 text-center font-bold shadow-[inset_0_0_0_1px_var(--trait)]">
-          ×{lot.quantite}
-        </span>
+        <span className="chiffres mt-px shrink-0 rounded-full bg-encre px-2 text-petit leading-5 font-bold text-pochette">×{lot.quantite}</span>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold">{descriptionLot(lot, objet)}</p>
-          {details && <p className="truncate text-micro text-encre-2">{details}</p>}
-          <dl className="mt-2 grid grid-cols-3 gap-2">
-            <Valeur nom={plusieurs ? 'Achat à l’unité' : 'Prix d’achat'}>
-              {lot.prixAchat != null ? <Montant valeur={lot.prixAchat} /> : <span className="font-normal text-encre-3">non indiqué</span>}
-            </Valeur>
-            <Valeur nom={v?.source === 'manuelle' ? (plusieurs ? 'Ta valeur (unité)' : 'Ta valeur') : plusieurs ? 'Cote à l’unité' : 'Cote'}>
-              {cote != null ? <Montant valeur={cote} /> : <span className="font-normal text-encre-3">sans cote</span>}
-            </Valeur>
-            <Valeur nom={gain == null ? 'Gain' : s === 'baisse' ? (plusieurs ? 'Perte totale' : 'Perte') : plusieurs ? 'Gain total' : 'Gain'}>
-              {gain == null ? (
-                <span className="font-normal text-encre-3">—</span>
-              ) : (
-                <Montant valeur={gain} signe className={s === 'hausse' ? 'text-hausse' : s === 'baisse' ? 'text-baisse' : ''} />
-              )}
-            </Valeur>
-          </dl>
+          <p className="leading-snug font-semibold">{descriptionLot(lot, objet)}</p>
+          {details && <p className="truncate text-[0.75rem] leading-4 text-encre-2">{details}</p>}
         </div>
       </div>
-      <div className="mt-1 flex flex-wrap gap-1 pl-11">
-        <ActionLot onClick={onModifier} icone={<Pencil size={16} aria-hidden />}>
+      <dl className="mt-3 grid grid-cols-3 gap-2 rounded-2xl bg-surface-2 px-3 py-2.5">
+        <Valeur nom={plusieurs ? 'Achat à l’unité' : 'Prix d’achat'}>
+          {lot.prixAchat != null ? <Montant valeur={lot.prixAchat} /> : <span className="font-normal text-encre-3">non indiqué</span>}
+        </Valeur>
+        <Valeur nom={v?.source === 'manuelle' ? (plusieurs ? 'Ta valeur (unité)' : 'Ta valeur') : plusieurs ? 'Cote à l’unité' : 'Cote'}>
+          {cote != null ? <Montant valeur={cote} /> : <span className="font-normal text-encre-3">sans cote</span>}
+        </Valeur>
+        <Valeur nom={gain == null ? 'Gain' : s === 'baisse' ? (plusieurs ? 'Perte totale' : 'Perte') : plusieurs ? 'Gain total' : 'Gain'}>
+          {gain == null ? (
+            <span className="font-normal text-encre-3">—</span>
+          ) : (
+            <Montant valeur={gain} signe className={s === 'hausse' ? 'text-hausse' : s === 'baisse' ? 'text-baisse' : ''} />
+          )}
+        </Valeur>
+      </dl>
+      <div className="mt-2.5 flex flex-wrap gap-2">
+        <ActionLot onClick={onModifier} icone={<Pencil size={15} aria-hidden />}>
           Modifier
         </ActionLot>
-        <ActionLot onClick={onVendre} icone={<HandCoins size={17} aria-hidden />}>
+        <ActionLot onClick={onVendre} icone={<HandCoins size={16} aria-hidden />}>
           Vendre
         </ActionLot>
-        <ActionLot onClick={() => void retirerUn()} icone={<Minus size={17} aria-hidden />} discret>
+        <ActionLot onClick={() => void retirerUn()} icone={<Minus size={16} aria-hidden />} discret>
           {plusieurs ? 'Retirer 1' : 'Retirer'}
         </ActionLot>
       </div>
@@ -116,8 +114,8 @@ function LigneLot({ lot, objet, onModifier, onVendre }: { lot: Possession; objet
 function Valeur({ nom, children }: { nom: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="truncate text-micro text-encre-2">{nom}</dt>
-      <dd className="chiffres truncate text-petit font-semibold">{children}</dd>
+      <dt className="truncate text-[0.75rem] leading-4 text-encre-2">{nom}</dt>
+      <dd className="chiffres mt-0.5 truncate text-petit font-semibold">{children}</dd>
     </div>
   );
 }
@@ -127,7 +125,9 @@ function ActionLot({ onClick, icone, children, discret }: { onClick: () => void;
     <button
       type="button"
       onClick={onClick}
-      className={`-ml-1 inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2.5 text-petit font-semibold active:bg-dos-doux ${discret ? 'text-encre-2' : 'text-dos'}`}
+      className={`appui inline-flex min-h-10 items-center gap-1.5 rounded-full border border-trait bg-surface px-3.5 text-petit font-semibold active:bg-surface-2 ${
+        discret ? 'text-encre-2' : 'text-encre'
+      }`}
     >
       {icone}
       {children}

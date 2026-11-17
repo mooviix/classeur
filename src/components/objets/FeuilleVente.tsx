@@ -139,21 +139,21 @@ function FormulaireVente({ lot, objet, ouverte, onFermer }: Props) {
             <Puces label="Plateforme de vente" options={PLATEFORMES.map((p) => ({ id: p as string, nom: p }))} valeur={plateforme} onChange={(p) => setPlateforme(p === plateforme ? null : p)} />
           </Rubrique>
 
-          <div className="mt-5 border-t border-trait pt-3">
+          <div className="mt-5 rounded-2xl bg-surface-2 px-4 py-3">
             {benefice != null ? (
               <div className="flex items-baseline justify-between gap-3">
                 <span className="font-semibold">Bénéfice estimé</span>
                 <Montant
                   valeur={benefice}
                   signe
-                  className={`chiffres text-titre font-bold ${sens(benefice) === 'hausse' ? 'text-hausse' : sens(benefice) === 'baisse' ? 'text-baisse' : ''}`}
+                  className={`chiffres font-titre text-titre font-bold ${sens(benefice) === 'hausse' ? 'text-hausse' : sens(benefice) === 'baisse' ? 'text-baisse' : ''}`}
                 />
               </div>
             ) : recette != null ? (
               <>
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="font-semibold">Tu reçois</span>
-                  <Montant valeur={recette} className="chiffres text-titre font-bold" />
+                  <Montant valeur={recette} className="chiffres font-titre text-titre font-bold" />
                 </div>
                 <p className="mt-1 text-micro text-encre-2">Pas de prix d’achat pour ce lot : le bénéfice ne peut pas être calculé.</p>
               </>

@@ -3,7 +3,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { Bouton } from '../components/Bouton';
 import { BarreCompletion } from '../components/classeur/BarreCompletion';
 import { coteDe, estSecrete, nbOfficiel, pluriel, pourcentEntier, regrouperCartes } from '../components/classeur/calculs';
-import { LienBouton, Onglets } from '../components/classeur/Controles';
+import { LienBouton, Puces } from '../components/classeur/Controles';
 import { useHauteurEntete, useMemoireDefilement } from '../components/classeur/defilement';
 import { AttenteDonnees } from '../components/classeur/EtatDonnees';
 import {
@@ -164,66 +164,60 @@ function Classeur({ d, ext }: { d: Donnees; ext: ExtensionCatalogue }) {
   return (
     <Ecran
       titre={ext.nom}
-      sousTitre={ext.serie.nom || undefined}
       retour
       actions={
         <BoutonIcone label="Affichage des pochettes" onClick={() => setAffichage(true)}>
-          <SlidersHorizontal size={22} aria-hidden />
+          <SlidersHorizontal size={20} aria-hidden />
         </BoutonIcone>
       }
     >
-      {/* Couverture du classeur : logo, repères, progression */}
-      <section aria-label="Progression de l’extension" className="pt-1 pb-3">
-        <div className="flex items-center justify-between gap-3">
+      {/* Couverture du classeur : logo, série et sortie, progression, valeur */}
+      <section aria-label="Progression de l’extension" className="bloc -mx-1 mt-1 p-4">
+        <div className="flex min-h-11 items-center justify-between gap-3">
           <LogoExtension ext={ext} taille="entete" />
-          {ext.code && (
-            <span className="etroit shrink-0 rounded-md px-2 py-0.5 text-petit font-bold tracking-wide text-encre shadow-[inset_0_0_0_1px_var(--trait)]">
-              {ext.code}
-            </span>
+          {(ext.serie.nom || ext.sortie) && (
+            <p className="shrink-0 text-right text-xs leading-[1.4] text-encre-2">
+              {ext.serie.nom && <span className="block">{ext.serie.nom}</span>}
+              {ext.sortie && <span className="block">Sortie le {date(ext.sortie)}</span>}
+            </p>
           )}
         </div>
-        <p className="mt-2 flex flex-wrap gap-x-3 text-petit text-encre-2">
-          {ext.sortie && <span>Sortie le {date(ext.sortie)}</span>}
-          <span>{pluriel(ext.cartes.length, 'carte')} en tout</span>
-        </p>
 
         {stats ? (
           <>
-            <div className="mt-4 flex items-end justify-between gap-4">
+            <div className="mt-3.5 flex items-end justify-between gap-4">
               <div className="min-w-0">
-                <p className="large chiffres text-grand font-extrabold tracking-tight">
+                <p className="font-titre chiffres text-[1.875rem] leading-none font-bold tracking-[-0.02em]">
                   {nombre(stats.officielles)}
-                  <span className="font-semibold text-encre-2"> / {nombre(total)}</span>
+                  <span className="font-semibold text-encre-3"> / {nombre(total)}</span>
                 </p>
-                <p className="text-petit text-encre-2">cartes officielles</p>
+                <p className="mt-1 text-xs text-encre-2">
+                  {stats.officielles > 1 ? 'cartes officielles' : 'carte officielle'}
+                  {stats.secretes > 0 && `, + ${pluriel(stats.secretes, 'secrète')}`}
+                </p>
               </div>
               <div className="min-w-0 text-right">
-                <Montant valeur={stats.valeur} className="large chiffres block truncate text-titre font-bold" />
-                <p className="text-petit text-encre-2">valeur de tes cartes</p>
+                <Montant valeur={stats.valeur} anime className="font-titre chiffres block truncate text-xl leading-tight font-bold tracking-[-0.01em]" />
+                <p className="mt-0.5 text-xs text-encre-2">valeur de tes cartes</p>
               </div>
             </div>
-            <div className="mt-3 flex items-center gap-3">
-              <BarreCompletion epaisse valeur={stats.officielles} max={total} label={`Progression de ${ext.nom}`} className="flex-1" />
-              <span className="chiffres w-11 shrink-0 text-right text-petit font-bold">{pourcentEntier(stats.officielles / total)}</span>
+            <div className="mt-3 flex items-center gap-2.5">
+              <BarreCompletion epaisse anime valeur={stats.officielles} max={total} label={`Progression de ${ext.nom}`} className="flex-1" />
+              <span className="chiffres shrink-0 text-xs font-semibold text-encre-2">{total > 0 ? pourcentEntier(stats.officielles / total) : '0 %'}</span>
             </div>
-            {stats.nbSecretes > 0 && (
-              <p className="mt-2 text-petit">
-                <span className="font-semibold">+ {pluriel(stats.secretes, 'secrète')}</span>
-                <span className="text-encre-2"> sur {nombre(stats.nbSecretes)}, numéros au-delà de {nombre(total)}</span>
-              </p>
-            )}
           </>
         ) : (
-          <div aria-hidden className="mt-4 h-20 animate-pulse rounded-pochette bg-trait/40" />
+          <div aria-hidden className="mt-3.5 h-[4.6rem] animate-pulse rounded-2xl bg-surface-2" />
         )}
       </section>
 
-      {/* Onglets collés sous l'en-tête pendant qu'on parcourt la grille */}
-      <div ref={refBarre} className="sticky z-20 -mx-4 bg-pochette/92 px-4 pt-1 pb-2 backdrop-blur-md" style={{ top: hauteurEntete }}>
-        <Onglets
+      {/* Pilules collées sous l'en-tête pendant qu'on parcourt la grille */}
+      <div ref={refBarre} className="sticky z-20 -mx-4 bg-pochette/92 pt-[7px] pb-1 backdrop-blur-md" style={{ top: hauteurEntete }}>
+        <Puces
           label="Cartes à afficher"
           valeur={filtre}
           onChange={changerFiltre}
+          className="px-3"
           options={[
             { id: 'toutes', nom: 'Toutes', compte: ext.cartes.length },
             { id: 'possedees', nom: 'Possédées', compte: detenu?.size },
@@ -233,14 +227,15 @@ function Classeur({ d, ext }: { d: Donnees; ext: ExtensionCatalogue }) {
         />
       </div>
 
-      <div ref={refGrille} className="pb-6">
+      <div ref={refGrille} className="pt-2 pb-6">
         {detenu && stats && (
           <>
             {visibles.length > 0 && <Compte filtre={filtre} visibles={visibles} cotes={cotes} enTrop={stats.enTrop} />}
             {visibles.length === 0 ? (
               <VideFiltre filtre={filtre} onToutes={() => changerFiltre('toutes')} />
             ) : (
-              <Grille colonnes={colonnes}>
+              // clé = filtre : en changeant de filtre, les premières pochettes reviennent en cascade
+              <Grille key={filtre} colonnes={colonnes}>
                 {visibles.map((c, i) => (
                   <PochetteCarte
                     key={c.id}
@@ -272,32 +267,26 @@ function Classeur({ d, ext }: { d: Donnees; ext: ExtensionCatalogue }) {
   );
 }
 
+/** Ligne d'information au-dessus de la grille, seulement quand elle apprend quelque chose (le nombre est déjà sur la pilule). */
 function Compte({ filtre, visibles, cotes, enTrop }: { filtre: Filtre; visibles: Carte[]; cotes: Map<string, number | null>; enTrop: number }) {
-  const n = visibles.length;
   let texte: string;
   let droite: string | null = null;
-  switch (filtre) {
-    case 'possedees':
-      texte = pluriel(n, 'carte possédée', 'cartes possédées');
-      break;
-    case 'manquantes': {
-      texte = pluriel(n, 'carte manquante', 'cartes manquantes');
-      // Ce que coûterait le reste à la cote (catalogue, pas la collection)
-      let cout = 0;
-      for (const c of visibles) cout += cotes.get(c.id) ?? 0;
-      if (cout > 0) droite = `environ ${euros(cout)} à la cote`;
-      break;
-    }
-    case 'doublons':
-      texte = `${pluriel(n, 'carte en double', 'cartes en double')}, ${pluriel(enTrop, 'exemplaire en trop', 'exemplaires en trop')}`;
-      break;
-    default:
-      texte = pluriel(n, 'carte');
+  if (filtre === 'manquantes') {
+    // Ce que coûterait le reste à la cote (catalogue, pas la collection)
+    let cout = 0;
+    for (const c of visibles) cout += cotes.get(c.id) ?? 0;
+    if (cout <= 0) return null;
+    texte = 'pour compléter, à la cote du jour';
+    droite = `environ ${euros(cout)}`;
+  } else if (filtre === 'doublons') {
+    texte = pluriel(enTrop, 'exemplaire en trop', 'exemplaires en trop');
+  } else {
+    return null;
   }
   return (
-    <p className="mb-2 flex items-baseline justify-between gap-3 text-petit text-encre-2">
+    <p className="mb-3 flex items-baseline justify-between gap-3 px-0.5 text-xs text-encre-2">
       <span className="min-w-0 truncate">{texte}</span>
-      {droite && <span className="chiffres shrink-0">{droite}</span>}
+      {droite && <span className="chiffres shrink-0 font-semibold text-encre">{droite}</span>}
     </p>
   );
 }
@@ -369,14 +358,14 @@ function FeuilleAffichage({
     <Feuille ouverte={ouverte} onFermer={onFermer} titre="Affichage des pochettes">
       <div className="flex flex-col gap-6 pt-1 pb-2">
         <div>
-          <h3 className="mb-2 font-semibold">Cartes manquantes</h3>
+          <h3 className="mb-2 text-corps font-bold">Cartes manquantes</h3>
           <Segments options={MANQUANTES} valeur={rendu} onChange={onRendu} label="Cartes manquantes" />
           <p className="mt-2 text-petit text-encre-2">
             {rendu === 'vide' ? 'Une pochette vide avec le numéro de la carte.' : 'L’image de la carte, pâlie, pour savoir laquelle chercher.'}
           </p>
         </div>
         <div>
-          <h3 className="mb-2 font-semibold">Pochettes par rangée</h3>
+          <h3 className="mb-2 text-corps font-bold">Pochettes par rangée</h3>
           <Segments options={RANGEES} valeur={`${colonnes}`} onChange={(v) => onColonnes(Number(v) as Colonnes)} label="Pochettes par rangée" />
           <p className="mt-2 text-petit text-encre-2">3 par rangée, c’est une page de classeur. Aussi pour ta collection.</p>
         </div>

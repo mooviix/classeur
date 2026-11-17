@@ -1,28 +1,30 @@
-// Accueil : valeur de la collection et son évolution, répartition, plus-value, mouvements,
+// Accueil : valeur de la collection et son évolution, répartition, plus fortes hausses et baisses, plus-value,
 // cartes les plus chères, derniers ajouts. Collection vide : invitation à scanner, chercher ou restaurer.
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArchiveRestore, Eye, EyeOff, ScanLine, Search, Settings } from 'lucide-react';
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { ArchiveRestore, Eye, EyeOff, ScanLine, Search, Settings2 } from 'lucide-react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Link } from 'wouter';
 import { Courbe, type Point } from '../components/Courbe';
 import { Ecran } from '../components/Ecran';
 import { Montant } from '../components/Montant';
 import { TuileCarte } from '../components/objets/TuileCarte';
 import { filtrerPeriode, PERIODES, Segments, type Periode } from '../components/Segments';
+import { Visuel } from '../components/Visuel';
 import { AttenteDonnees } from '../components/tableau/AttenteDonnees';
+import { BandeCartes } from '../components/tableau/BandeCartes';
 import { BarreSegmentee } from '../components/tableau/BarreSegmentee';
 import { detailObjet, LigneObjet } from '../components/tableau/LigneObjet';
-import { couleurSens, LienBouton, pluriel, Section, VEDETTE } from '../components/tableau/Section';
-import { Variation } from '../components/Variation';
-import { Visuel } from '../components/Visuel';
+import { BlocVide, couleurSens, LienBouton, Pastille, pluriel, Section, SEGMENTS_NUS, VEDETTE } from '../components/tableau/Section';
 import { useDonnees, type Carte, type Donnees } from '../data/catalogue';
 import { calculerBilan, calculerCourbeCollection, mouvements, objetDe, valoriser, type Bilan, type Mouvement } from '../data/valeur';
 import { usePossessions } from '../db/collection';
 import { lireReglages, useReglages, type Reglages } from '../db/reglages';
 import { derniereSauvegarde, restaurerSauvegarde } from '../db/sauvegarde';
 import { db, type Possession } from '../db/schema';
-import { aujourdhui, date, dateCourte } from '../lib/format';
+import { aujourdhui, date, dateCourte, pourcent } from '../lib/format';
 import { basculerMontants, useMontantsMasques } from '../lib/montants';
+
+const TITRE = 'Ma collection';
 
 export function Accueil() {
   const etat = useDonnees();
@@ -31,17 +33,17 @@ export function Accueil() {
   const r = useReglages();
   useReleveDuJour(d, lots);
 
-  if (lots === undefined) return <Ecran titre={<Marque />}>{null}</Ecran>;
+  if (lots === undefined) return <Ecran titre={TITRE}>{null}</Ecran>;
   if (lots.length === 0) return <Bienvenue />;
 
   return (
     <Ecran
-      titre={<Marque />}
+      titre={TITRE}
       actions={
-        <>
+        <div className="flex gap-2">
           <BoutonOeil />
           <LienReglages />
-        </>
+        </div>
       }
     >
       {d ? <TableauDeBord d={d} lots={lots} r={r} /> : <AttenteDonnees etat={etat} />}
@@ -52,13 +54,17 @@ export function Accueil() {
 function TableauDeBord({ d, lots, r }: { d: Donnees; lots: Possession[]; r: Reglages }) {
   const bilan = useMemo(() => calculerBilan(d, lots, r), [d, lots, r]);
   const courbe = useCourbe(d, lots, r);
+  // La période choisie sous la courbe vaut aussi pour la pastille de variation, sous la valeur totale.
+  const [periode, setPeriode] = useState<Periode>('1m');
+  const continus = useMemo(() => (courbe.points ? partieContinue(courbe.points) : undefined), [courbe.points]);
+  const points = useMemo(() => (continus ? filtrerPeriode(continus, periode) : undefined), [continus, periode]);
   return (
     <>
-      <Valeur bilan={bilan} r={r} />
-      <Evolution points={courbe.points} enCours={courbe.enCours} />
+      <Valeur bilan={bilan} r={r} points={points} periode={periode} />
+      <Evolution points={points} enCours={courbe.enCours} periode={periode} onPeriode={setPeriode} />
       <Repartition bilan={bilan} r={r} />
-      <PlusValue bilan={bilan} lots={lots} r={r} />
       <Mouvements d={d} lots={lots} r={r} />
+      <PlusValue bilan={bilan} lots={lots} r={r} />
       <PlusCheres d={d} lots={lots} r={r} />
       <DerniersAjouts d={d} lots={lots} r={r} />
       <Pied d={d} />
@@ -68,9 +74,7 @@ function TableauDeBord({ d, lots, r }: { d: Donnees; lots: Possession[]; r: Regl
 
 // ---------- En-tête ----------
 
-function Marque() {
-  return <span className="large">Classeur</span>;
-}
+const ROND = 'appui flex size-10 items-center justify-center rounded-full border border-trait bg-surface text-encre';
 
 function BoutonOeil() {
   const masques = useMontantsMasques();
@@ -81,58 +85,95 @@ function BoutonOeil() {
       aria-pressed={masques}
       title={masques ? 'Afficher les montants' : 'Masquer les montants'}
       onClick={() => basculerMontants()}
-      className="flex size-10 items-center justify-center rounded-full text-encre active:bg-surface-2"
+      className={ROND}
     >
-      {masques ? <EyeOff size={22} aria-hidden /> : <Eye size={22} aria-hidden />}
+      {masques ? <EyeOff size={20} strokeWidth={1.8} aria-hidden /> : <Eye size={20} strokeWidth={1.8} aria-hidden />}
     </button>
   );
 }
 
 function LienReglages() {
   return (
-    <Link
-      href="/reglages"
-      aria-label="Réglages"
-      title="Réglages"
-      className="flex size-10 items-center justify-center rounded-full text-encre active:bg-surface-2"
-    >
-      <Settings size={22} aria-hidden />
+    <Link href="/reglages" aria-label="Réglages" title="Réglages" className={ROND}>
+      <Settings2 size={20} strokeWidth={1.8} aria-hidden />
     </Link>
   );
 }
 
 // ---------- Valeur totale ----------
 
-function Valeur({ bilan, r }: { bilan: Bilan; r: Reglages }) {
+const EN_PERIODE: Record<Periode, string> = {
+  '7j': 'en 7 jours',
+  '1m': 'en 1 mois',
+  '3m': 'en 3 mois',
+  '1a': 'en 1 an',
+  tout: 'depuis le début',
+};
+
+/** « depuis le 12 oct. », avec l'année si ce n'est pas l'année en cours. */
+function depuis(jour: string): string {
+  return `depuis le ${jour.slice(0, 4) === aujourdhui().slice(0, 4) ? dateCourte(jour) : date(jour)}`;
+}
+
+/** Variation de la courbe sur la période (premier et dernier point). null tant que la courbe n'est pas calculée. */
+function variationPeriode(points: Point[] | undefined, periode: Periode): { delta: number | null; ratio: number | null; texte: string } | null {
+  if (!points) return null;
+  const premier = points[0];
+  const dernier = points.at(-1);
+  if (!premier || !dernier || points.length < 2) return { delta: null, ratio: null, texte: EN_PERIODE[periode] };
+  const delta = dernier.v - premier.v;
+  const ratio = premier.v > 0 ? delta / premier.v : null;
+  // Historique plus court que la période (ou « Tout ») : on dit depuis quand, plutôt que « en 1 an ».
+  const jours = PERIODES.find((p) => p.id === periode)?.jours ?? null;
+  const debutPeriode = jours == null ? null : Date.now() - jours * 86_400_000;
+  const court = debutPeriode == null || Date.parse(`${premier.d}T12:00:00`) - debutPeriode > 3 * 86_400_000;
+  return { delta, ratio, texte: court ? depuis(premier.d) : EN_PERIODE[periode] };
+}
+
+function Valeur({ bilan, r, points, periode }: { bilan: Bilan; r: Reglages; points: Point[] | undefined; periode: Periode }) {
   const id = useId();
-  const v = bilan.variation.j1;
-  const ratio = v && v.base > 0 ? v.euros / v.base : null;
+  const evo = useMemo(() => variationPeriode(points, periode), [points, periode]);
+  const j1 = bilan.variation.j1;
   const compte: string[] = [];
   if (bilan.nbCartes) compte.push(pluriel(bilan.nbCartes, 'carte'));
   if (bilan.nbScelles) {
     compte.push(`${pluriel(bilan.nbScelles, 'scellé')}${r.inclureScelles ? '' : bilan.nbScelles > 1 ? ' (non comptés)' : ' (non compté)'}`);
   }
   return (
-    <section aria-labelledby={id} className="pt-2">
-      <h2 id={id} className="text-petit text-encre-2">
-        Valeur de ta collection
+    <section aria-labelledby={id} className="pt-3">
+      <h2 id={id} className="font-sans text-petit font-normal tracking-normal text-encre-2">
+        Valeur totale
       </h2>
-      {/* Chiffre-vedette : le seul de l'écran, chiffres proportionnels */}
-      <p className={`mt-1 ${VEDETTE}`}>
+      {/* Chiffre-vedette : le seul de l'écran, il monte jusqu'au total */}
+      <p className={`mt-0.5 ${VEDETTE}`}>
         <Montant valeur={bilan.valeur} anime />
       </p>
-      <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1">
-        {v ? (
+      {/* Hauteur réservée : la pastille arrive en fondu quand la courbe est calculée, sans faire sauter la page */}
+      <div className="mt-2.5 min-h-[1.625rem] text-petit">
+        {evo && (
+          <p key={periode} className="flex animate-[fondu_0.3s_ease-out_both] flex-wrap items-center gap-x-2 gap-y-1">
+            {evo.delta != null ? (
+              <>
+                <Pastille v={evo.delta}>
+                  <Montant valeur={evo.delta} signe />
+                </Pastille>
+                {evo.ratio != null && <span className={`font-semibold ${couleurSens(evo.delta)}`}>{pourcent(evo.ratio)}</span>}
+                <span className="text-encre-2">{evo.texte}</span>
+              </>
+            ) : (
+              <span className="text-encre-2">Pas encore assez d’historique pour cette période</span>
+            )}
+          </p>
+        )}
+      </div>
+      <p className="mt-2 text-petit text-encre-2">
+        {compte.join(' et ')}
+        {j1 && Math.abs(j1.euros) >= 0.005 && (
           <>
-            <Montant valeur={v.euros} signe className={`font-semibold ${couleurSens(v.euros)}`} />
-            <Variation ratio={ratio} />
-            <span className="text-petit text-encre-2">en 24 h</span>
+            , <Montant valeur={j1.euros} signe className={`font-semibold ${couleurSens(j1.euros)}`} /> depuis hier
           </>
-        ) : (
-          <span className="text-petit text-encre-2">Pas encore de variation sur 24 h</span>
         )}
       </p>
-      <p className="mt-1 text-petit text-encre-2">{compte.join(' et ')}</p>
       {bilan.sansCote > 0 && (
         <p className="text-petit text-encre-2">
           {bilan.sansCote === 1 ? '1 objet n’a pas de cote : il compte pour 0 €.' : `${bilan.sansCote} objets n’ont pas de cote : ils comptent pour 0 €.`}
@@ -169,15 +210,7 @@ function useCourbe(d: Donnees, lots: Possession[], r: Reglages): { points: Point
   return etat;
 }
 
-const SUR_PERIODE: Record<Periode, string> = {
-  '7j': 'Sur 7 jours',
-  '1m': 'Sur 1 mois',
-  '3m': 'Sur 3 mois',
-  '1a': 'Sur 1 an',
-  tout: 'Depuis le début',
-};
-
-const HAUTEUR_COURBE = 180;
+const HAUTEUR_COURBE = 172;
 const masquer = () => '•••• €';
 
 /**
@@ -192,41 +225,29 @@ function partieContinue(points: Point[], ecartMaxJours = 21): Point[] {
   return points;
 }
 
-function Evolution({ points: tous, enCours }: { points: Point[] | undefined; enCours: boolean }) {
-  const [periode, setPeriode] = useState<Periode>('1m');
+function Evolution({
+  points,
+  enCours,
+  periode,
+  onPeriode,
+}: {
+  points: Point[] | undefined;
+  enCours: boolean;
+  periode: Periode;
+  onPeriode: (p: Periode) => void;
+}) {
   const masques = useMontantsMasques();
-  const continus = useMemo(() => (tous ? partieContinue(tous) : undefined), [tous]);
-  const points = useMemo(() => (continus ? filtrerPeriode(continus, periode) : undefined), [continus, periode]);
-  const premier = points?.[0];
-  const dernier = points?.at(-1);
-  const delta = premier && dernier && points && points.length > 1 ? dernier.v - premier.v : null;
-  const ratio = delta != null && premier && premier.v > 0 ? delta / premier.v : null;
-
   return (
-    <Section titre="Évolution" className="mt-8">
-      <Segments options={PERIODES} valeur={periode} onChange={setPeriode} label="Période de la courbe" taille="petit" />
-      <div className="mt-4 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <p className="text-petit font-semibold">
-          {periode === 'tout' && premier ? `Depuis le ${date(premier.d)}` : SUR_PERIODE[periode]}
-        </p>
-        {delta != null && (
-          <p className="flex items-center gap-2">
-            <Montant valeur={delta} signe className={`text-petit font-semibold ${couleurSens(delta)}`} />
-            <Variation ratio={ratio} taille="micro" />
-          </p>
-        )}
+    <section aria-label="Évolution de la valeur" className="bloc mt-5 pt-3 pb-3">
+      <div className={`px-3 ${SEGMENTS_NUS}`}>
+        <Segments options={PERIODES} valeur={periode} onChange={onPeriode} label="Période de la courbe" taille="petit" />
       </div>
-      <p className="text-micro text-encre-2">Ce que tu possèdes aujourd’hui, au prix de chaque jour</p>
       {/* Montants masqués (œil) : info-bulle et tableau passent par `format`, les graduations de l'axe sont cachées. */}
-      <div
-        className={`mt-2 rounded-pochette bg-surface px-1 pt-2 pb-1 shadow-[inset_0_0_0_1px_var(--trait)] ${
-          masques ? '[&_svg_text.chiffres]:invisible' : ''
-        }`}
-      >
+      <div className={`mt-2 px-3 ${masques ? '[&_svg_text.chiffres]:invisible' : ''}`}>
         {points ? (
           <Courbe
             points={points}
-            libelle="Valeur de ta collection"
+            libelle="Valeur de ce que tu possèdes aujourd’hui, au prix de chaque jour"
             hauteur={HAUTEUR_COURBE}
             chargement={enCours}
             format={masques ? masquer : undefined}
@@ -237,7 +258,8 @@ function Evolution({ points: tous, enCours }: { points: Point[] | undefined; enC
           </div>
         )}
       </div>
-    </Section>
+      <p className="mt-0.5 px-3 text-micro text-encre-3">Ce que tu possèdes aujourd’hui, au prix de chaque jour</p>
+    </section>
   );
 }
 
@@ -247,7 +269,7 @@ function Repartition({ bilan, r }: { bilan: Bilan; r: Reglages }) {
   // Une seule part ne montre rien : la barre n'apparaît que s'il y a des cartes ET des scellés cotés.
   if (!(bilan.valeurCartes > 0 && bilan.valeurScelles > 0)) return null;
   return (
-    <Section titre="Répartition">
+    <section aria-label="Répartition de la valeur" className="bloc mt-3 px-4 py-3.5">
       <BarreSegmentee
         libelle="Répartition de la valeur"
         parts={[
@@ -257,24 +279,89 @@ function Repartition({ bilan, r }: { bilan: Bilan; r: Reglages }) {
             nom: 'Scellés',
             valeur: bilan.valeurScelles,
             couleur: 'var(--serie-2)',
-            note: r.inclureScelles ? undefined : 'Pas comptés dans la valeur (réglages)',
+            note: r.inclureScelles ? undefined : 'Pas comptés dans la valeur totale (réglages)',
           },
         ]}
       />
-    </Section>
+    </section>
+  );
+}
+
+// ---------- Plus fortes hausses et baisses ----------
+
+const PERIODES_MVT = [
+  { id: 'j1', nom: '24 h' },
+  { id: 'j7', nom: '7 j' },
+  { id: 'j30', nom: '30 j' },
+] as const;
+type PeriodeMvt = (typeof PERIODES_MVT)[number]['id'];
+const SUR_MVT: Record<PeriodeMvt, string> = { j1: 'sur 24 h', j7: 'sur 7 jours', j30: 'sur 30 jours' };
+
+const cleMouvement = (m: Mouvement, i: number) =>
+  `${m.objet.type}:${m.objet.type === 'carte' ? m.objet.carte.id : m.objet.scelle.ref}:${m.variante ?? ''}:${i}`;
+
+function Mouvements({ d, lots, r }: { d: Donnees; lots: Possession[]; r: Reglages }) {
+  const [periode, setPeriode] = useState<PeriodeMvt>('j30');
+  const { hausses, baisses } = useMemo(() => mouvements(d, lots, r, periode), [d, lots, r, periode]);
+  const sur = SUR_MVT[periode];
+  const rien = hausses.length + baisses.length === 0;
+  return (
+    <>
+      <Section
+        titre="Plus fortes hausses"
+        aside={
+          <div className={`w-[8.75rem] shrink-0 ${SEGMENTS_NUS}`}>
+            <Segments options={PERIODES_MVT} valeur={periode} onChange={setPeriode} label="Période des hausses et des baisses" taille="petit" />
+          </div>
+        }
+      >
+        {rien ? (
+          <BlocVide>Aucune cote de ta collection n’a bougé {sur}.</BlocVide>
+        ) : hausses.length === 0 ? (
+          <BlocVide>Aucune hausse {sur}.</BlocVide>
+        ) : (
+          <BandeCartes
+            libelle={`Plus fortes hausses ${sur}`}
+            elements={hausses.slice(0, 10).map((m, i) => ({
+              cle: cleMouvement(m, i),
+              objet: m.objet,
+              quantite: m.quantite,
+              cote: m.maintenant,
+              ratio: m.ratio,
+            }))}
+          />
+        )}
+      </Section>
+      {!rien && (
+        <Section titre="Plus fortes baisses" aside={<span className="shrink-0 text-petit text-encre-2">{sur}</span>}>
+          {baisses.length === 0 ? (
+            <BlocVide>Aucune baisse {sur}.</BlocVide>
+          ) : (
+            <ul className="bloc cascade divide-y divide-trait px-4">
+              {baisses.slice(0, 3).map((m, i) => (
+                <li key={cleMouvement(m, i)}>
+                  <LigneObjet
+                    objet={m.objet}
+                    variante={m.variante}
+                    sousTitre={`${detailObjet(m.objet, m.variante)}${m.quantite > 1 ? `, ×${m.quantite}` : ''}`}
+                    droite={
+                      <>
+                        <Montant valeur={m.euros} signe className={`chiffres block text-corps font-semibold ${couleurSens(m.euros)}`} />
+                        <span className={`chiffres mt-0.5 block text-xs font-medium ${couleurSens(m.euros)}`}>{pourcent(m.ratio)}</span>
+                      </>
+                    }
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </Section>
+      )}
+    </>
   );
 }
 
 // ---------- Plus-value ----------
-
-function LigneChiffre({ terme, children }: { terme: string; children: ReactNode }) {
-  return (
-    <div className="flex min-h-12 items-center justify-between gap-3 py-2.5">
-      <dt className="text-encre-2">{terme}</dt>
-      <dd className="chiffres text-right">{children}</dd>
-    </div>
-  );
-}
 
 function PlusValue({ bilan, lots, r }: { bilan: Bilan; lots: Possession[]; r: Reglages }) {
   const { avecAchat, comptes } = useMemo(() => {
@@ -292,7 +379,7 @@ function PlusValue({ bilan, lots, r }: { bilan: Bilan; lots: Possession[]; r: Re
   if (bilan.plusValue == null) {
     return (
       <Section titre="Plus-value" lien={lien}>
-        <div className="pochette px-4 py-4">
+        <div className="bloc px-4 py-4">
           <p className="font-semibold">Note tes prix d’achat</p>
           <p className="mt-1 text-petit text-encre-2">
             Sur la fiche d’une carte ou d’un scellé, indique combien tu l’as payé : tu verras ici ce que ta collection a gagné.
@@ -301,86 +388,45 @@ function PlusValue({ bilan, lots, r }: { bilan: Bilan; lots: Possession[]; r: Re
       </Section>
     );
   }
-  const ratio = bilan.investi > 0 ? bilan.plusValue / bilan.investi : null;
+  const pv = bilan.plusValue;
+  const ratio = bilan.investi > 0 ? pv / bilan.investi : null;
   return (
     <Section titre="Plus-value" lien={lien}>
-      <dl className="pochette divide-y divide-trait px-4">
-        <LigneChiffre terme="Investi">
-          <Montant valeur={bilan.investi} className="font-semibold" />
-        </LigneChiffre>
-        <LigneChiffre terme="Valeur aujourd’hui">
-          <Montant valeur={bilan.valeurAchetee} className="font-semibold" />
-        </LigneChiffre>
-        <LigneChiffre terme="Gain">
-          <span className="flex items-center justify-end gap-2">
-            <Montant valeur={bilan.plusValue} signe className={`font-bold ${couleurSens(bilan.plusValue)}`} />
-            <Variation ratio={ratio} />
-          </span>
-        </LigneChiffre>
-      </dl>
-      {avecAchat < comptes && (
-        <p className="mt-2 text-micro text-encre-2">
-          Calculé sur les {pluriel(avecAchat, 'objet')} dont tu as noté le prix d’achat (sur {comptes}).
-        </p>
-      )}
+      <div className="bloc px-4 pt-3.5 pb-4">
+        <div className="flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-petit text-encre-2">Gain</p>
+            <p className={`mt-0.5 font-titre text-[1.75rem] leading-8 font-bold tracking-[-0.02em] whitespace-nowrap ${couleurSens(pv)}`}>
+              <Montant valeur={pv} signe />
+            </p>
+          </div>
+          {ratio != null && (
+            <span className="mb-1 shrink-0">
+              <Pastille v={pv}>{pourcent(ratio)}</Pastille>
+            </span>
+          )}
+        </div>
+        <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-trait pt-3">
+          <div className="min-w-0">
+            <dt className="text-xs text-encre-2">Investi</dt>
+            <dd className="chiffres mt-0.5 text-corps font-semibold">
+              <Montant valeur={bilan.investi} />
+            </dd>
+          </div>
+          <div className="min-w-0">
+            <dt className="text-xs text-encre-2">Valeur aujourd’hui</dt>
+            <dd className="chiffres mt-0.5 text-corps font-semibold">
+              <Montant valeur={bilan.valeurAchetee} />
+            </dd>
+          </div>
+        </dl>
+        {avecAchat < comptes && (
+          <p className="mt-3 text-xs text-encre-3">
+            Calculé sur {avecAchat > 1 ? `les ${pluriel(avecAchat, 'objet')}` : 'l’objet'} dont tu as noté le prix d’achat (sur {comptes}).
+          </p>
+        )}
+      </div>
     </Section>
-  );
-}
-
-// ---------- Mouvements ----------
-
-const PERIODES_MVT = [
-  { id: 'j1', nom: '24 h' },
-  { id: 'j7', nom: '7 jours' },
-  { id: 'j30', nom: '30 jours' },
-] as const;
-type PeriodeMvt = (typeof PERIODES_MVT)[number]['id'];
-
-function Mouvements({ d, lots, r }: { d: Donnees; lots: Possession[]; r: Reglages }) {
-  const [periode, setPeriode] = useState<PeriodeMvt>('j1');
-  const { hausses, baisses } = useMemo(() => mouvements(d, lots, r, periode), [d, lots, r, periode]);
-  const sur = `sur ${PERIODES_MVT.find((p) => p.id === periode)?.nom}`;
-  return (
-    <Section titre="Plus fortes hausses et baisses">
-      <Segments options={PERIODES_MVT} valeur={periode} onChange={setPeriode} label="Période des variations" taille="petit" />
-      {hausses.length + baisses.length === 0 ? (
-        <p className="py-6 text-center text-petit text-encre-2">Aucune cote de ta collection n’a bougé {sur}.</p>
-      ) : (
-        <>
-          <ListeMouvements titre="Hausses" liste={hausses.slice(0, 3)} vide={`Aucune hausse ${sur}.`} />
-          <ListeMouvements titre="Baisses" liste={baisses.slice(0, 3)} vide={`Aucune baisse ${sur}.`} />
-        </>
-      )}
-    </Section>
-  );
-}
-
-function ListeMouvements({ titre, liste, vide }: { titre: string; liste: Mouvement[]; vide: string }) {
-  return (
-    <div className="mt-4">
-      <h3 className="text-petit font-semibold text-encre-2">{titre}</h3>
-      {liste.length === 0 ? (
-        <p className="py-3 text-petit text-encre-3">{vide}</p>
-      ) : (
-        <ul className="divide-y divide-trait">
-          {liste.map((m, i) => (
-            <li key={`${m.objet.type}:${m.objet.type === 'carte' ? m.objet.carte.id : m.objet.scelle.ref}:${i}`}>
-              <LigneObjet
-                objet={m.objet}
-                variante={m.variante}
-                sousTitre={`${detailObjet(m.objet, m.variante)}${m.quantite > 1 ? `, ×${m.quantite}` : ''}`}
-                droite={
-                  <>
-                    <Montant valeur={m.euros} signe className={`chiffres block text-petit font-semibold ${couleurSens(m.euros)}`} />
-                    <Variation ratio={m.ratio} taille="micro" />
-                  </>
-                }
-              />
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
   );
 }
 
@@ -409,7 +455,7 @@ function PlusCheres({ d, lots, r }: { d: Donnees; lots: Possession[]; r: Reglage
   if (cartes.length === 0) return null;
   return (
     <Section titre="Mes cartes les plus chères" lien={{ href: '/collection', texte: 'Voir tout' }}>
-      <div className="grid grid-cols-3 gap-x-3 gap-y-4">
+      <div className="cascade grid grid-cols-3 gap-x-2.5 gap-y-4">
         {cartes.map((c) => (
           <TuileCarte key={c.carte.id} carte={c.carte} quantite={c.quantite} prix={c.prix} sousTitre="extension" />
         ))}
@@ -446,7 +492,7 @@ function DerniersAjouts({ d, lots, r }: { d: Donnees; lots: Possession[]; r: Reg
   if (derniers.length === 0) return null;
   return (
     <Section titre="Derniers ajouts" lien={{ href: '/collection', texte: 'Voir tout' }}>
-      <ul className="divide-y divide-trait">
+      <ul className="bloc cascade divide-y divide-trait px-4">
         {derniers.map(({ l, o, unitaire }) => (
           <li key={l.id}>
             <LigneObjet
@@ -455,8 +501,8 @@ function DerniersAjouts({ d, lots, r }: { d: Donnees; lots: Possession[]; r: Reg
               sousTitre={`${detailObjet(o, l.variante)}${l.quantite > 1 ? `, ×${l.quantite}` : ''}`}
               droite={
                 <>
-                  <Montant valeur={unitaire == null ? null : unitaire * l.quantite} className="chiffres block text-petit font-semibold" />
-                  <span className="block text-micro text-encre-2">{quand(l.ajouteLe)}</span>
+                  <Montant valeur={unitaire == null ? null : unitaire * l.quantite} className="chiffres block text-corps font-semibold" />
+                  <span className="mt-0.5 block text-xs text-encre-2">{quand(l.ajouteLe)}</span>
                 </>
               }
             />
@@ -474,13 +520,16 @@ function Pied({ d }: { d: Donnees }) {
   const jours = derniere ? Math.floor((Date.now() - Date.parse(derniere)) / 86_400_000) : null;
   const rappel = derniere === null || (jours != null && jours > 14);
   return (
-    <footer className="mt-10 mb-2 flex flex-col items-center gap-1 text-center text-micro text-encre-2">
-      <p>Prix Cardmarket du {dateCourte(d.meta.datePrix)}</p>
+    <footer className="mt-9 mb-2 flex flex-col items-center gap-3 text-center">
       {rappel && (
-        <Link href="/reglages" className="inline-flex min-h-10 items-center px-2 text-dos underline decoration-dos/40 underline-offset-2">
+        <Link
+          href="/reglages"
+          className="appui inline-flex min-h-10 items-center rounded-full border border-trait bg-surface px-4 text-petit font-semibold text-encre"
+        >
           {derniere ? `Dernière sauvegarde il y a ${jours} jours : sauvegarder` : 'Collection jamais sauvegardée : sauvegarder'}
         </Link>
       )}
+      <p className="text-xs text-encre-2">Prix Cardmarket du {dateCourte(d.meta.datePrix)}</p>
     </footer>
   );
 }
@@ -542,30 +591,32 @@ function Bienvenue() {
   };
 
   return (
-    <Ecran titre={<Marque />} actions={<LienReglages />}>
-      <div className="pt-4 pb-6">
+    <Ecran titre={TITRE} actions={<LienReglages />}>
+      <div className="pt-3 pb-6">
         {/* Une page de classeur vide, prête à être remplie */}
-        <div aria-hidden className="mx-auto grid max-w-60 grid-cols-3 gap-2.5">
-          {['001', '002', '003', '004', '005', '006'].map((n) => (
-            <Visuel key={n} src={null} alt="" vide repli={n} />
-          ))}
+        <div aria-hidden className="bloc px-6 py-6">
+          <div className="cascade mx-auto grid max-w-56 grid-cols-3 gap-2.5">
+            {['001', '002', '003', '004', '005', '006'].map((n) => (
+              <Visuel key={n} src={null} alt="" vide repli={n} />
+            ))}
+          </div>
         </div>
-        <h2 className="semi-large mt-8 text-grand font-extrabold tracking-tight">Commence ton classeur</h2>
-        <p className="mt-2 text-encre-2">
+        <h2 className="mt-7 text-[1.75rem] leading-8 font-bold tracking-[-0.02em]">Commence ton classeur</h2>
+        <p className="mt-2 text-corps text-encre-2">
           Ajoute tes cartes et tes produits scellés : leur cote Cardmarket et son évolution s’affichent ici, jour après jour.
         </p>
         <div className="mt-6 flex flex-col gap-3">
           <LienBouton href="/scanner" genre="scan" plein icone={<ScanLine size={20} aria-hidden />}>
             Scanner une carte
           </LienBouton>
-          <LienBouton href="/recherche" genre="principal" plein icone={<Search size={20} aria-hidden />}>
+          <LienBouton href="/recherche" genre="secondaire" plein icone={<Search size={20} aria-hidden />}>
             Chercher une carte
           </LienBouton>
           <button
             type="button"
             disabled={enCours}
             onClick={() => fichier.current?.click()}
-            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-surface-2 px-4 font-semibold text-encre shadow-[inset_0_0_0_1px_var(--trait)] active:bg-trait/60 disabled:opacity-45"
+            className="appui inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[14px] px-4 font-semibold text-encre-2 disabled:opacity-45"
           >
             <ArchiveRestore size={20} aria-hidden />
             {enCours ? 'Restauration…' : 'Restaurer une sauvegarde'}
@@ -583,11 +634,11 @@ function Bienvenue() {
           />
         </div>
         {erreur && (
-          <p role="alert" className="mt-3 rounded-lg bg-baisse-doux px-3 py-2 text-petit text-baisse">
+          <p role="alert" className="mt-3 rounded-xl bg-baisse-doux px-3 py-2 text-petit text-baisse">
             {erreur}
           </p>
         )}
-        <p className="mt-6 text-petit text-encre-2">Tout reste sur ce téléphone : pas de compte, pas de pub.</p>
+        <p className="mt-6 text-center text-petit text-encre-2">Tout reste sur ce téléphone : pas de compte, pas de pub.</p>
       </div>
     </Ecran>
   );

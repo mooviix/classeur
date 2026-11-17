@@ -45,12 +45,12 @@ const texteErreur = (e: unknown) => (e instanceof Error ? e.message : String(e))
 function Groupe({ titre, note, children }: { titre: string; note?: ReactNode; children: ReactNode }) {
   const id = useId();
   return (
-    <section aria-labelledby={id} className="mt-8 first:mt-3">
-      <h2 id={id} className="mb-2 px-1 text-petit font-semibold text-encre-2">
+    <section aria-labelledby={id} className="mt-7 first:mt-3">
+      <h2 id={id} className="mb-3 text-[1.125rem] leading-6 font-bold">
         {titre}
       </h2>
-      <div className="pochette divide-y divide-trait px-4">{children}</div>
-      {note && <div className="mt-2 px-1 text-micro text-encre-2">{note}</div>}
+      <div className="bloc divide-y divide-trait px-4">{children}</div>
+      {note && <div className="mt-2 px-1 text-xs leading-relaxed text-encre-2">{note}</div>}
     </section>
   );
 }
@@ -59,10 +59,10 @@ function Ligne({ libelle, aide, children }: { libelle: ReactNode; aide?: ReactNo
   return (
     <div className="flex min-h-14 items-center gap-3 py-3">
       <div className="min-w-0 flex-1">
-        <div className="font-medium">{libelle}</div>
+        <div className="text-corps font-medium">{libelle}</div>
         {aide && <div className="mt-0.5 text-petit text-encre-2">{aide}</div>}
       </div>
-      {children != null && <div className="shrink-0 text-right">{children}</div>}
+      {children != null && <div className="shrink-0 text-right text-corps">{children}</div>}
     </div>
   );
 }
@@ -80,7 +80,7 @@ function Interrupteur({ libelle, aide, valeur, onChange }: { libelle: string; ai
       className="flex min-h-14 w-full items-center gap-3 py-3 text-left"
     >
       <span className="min-w-0 flex-1">
-        <span id={`${id}-l`} className="block font-medium">
+        <span id={`${id}-l`} className="block text-corps font-medium">
           {libelle}
         </span>
         {aide && (
@@ -89,12 +89,13 @@ function Interrupteur({ libelle, aide, valeur, onChange }: { libelle: string; ai
           </span>
         )}
       </span>
-      <span
-        aria-hidden
-        className={`inline-flex h-7 w-12 shrink-0 items-center rounded-full p-0.5 transition-colors ${valeur ? 'bg-dos' : 'bg-encre-3'}`}
-      >
+      {/* piste graphite qui apparaît en fondu, pastille qui glisse : opacité et transformation seulement */}
+      <span aria-hidden className="relative h-7 w-12 shrink-0 rounded-full bg-encre-3/80">
+        <span className={`absolute inset-0 rounded-full bg-dos transition-opacity duration-200 ${valeur ? 'opacity-100' : 'opacity-0'}`} />
         <span
-          className={`size-6 rounded-full bg-surface shadow-[0_1px_3px_rgb(0_0_0/0.3)] transition-transform ${valeur ? 'translate-x-5' : ''}`}
+          className={`absolute top-0.5 left-0.5 size-6 rounded-full shadow-[0_1px_3px_rgb(0_0_0/0.28)] transition-transform duration-200 ease-douce ${
+            valeur ? 'translate-x-5 bg-sur-dos' : 'bg-white'
+          }`}
         />
       </span>
     </button>
@@ -104,7 +105,7 @@ function Interrupteur({ libelle, aide, valeur, onChange }: { libelle: string; ai
 function Retour({ message }: { message: Message }) {
   if (!message) return null;
   return message.ton === 'erreur' ? (
-    <p role="alert" className="mt-3 rounded-lg bg-baisse-doux px-3 py-2 text-petit text-baisse">
+    <p role="alert" className="mt-3 rounded-xl bg-baisse-doux px-3 py-2 text-petit text-baisse">
       {message.texte}
     </p>
   ) : (
@@ -132,7 +133,7 @@ function Choix<T extends string>({
 }) {
   return (
     <label
-      className={`flex cursor-pointer gap-3 rounded-xl p-3 ${
+      className={`flex cursor-pointer gap-3 rounded-2xl p-3.5 ${
         coche ? 'bg-dos-doux shadow-[inset_0_0_0_2px_var(--dos)]' : 'bg-surface-2 shadow-[inset_0_0_0_1px_var(--trait)]'
       }`}
     >
@@ -229,12 +230,12 @@ function SectionSauvegarde() {
     <>
       <Groupe titre="Sauvegarde">
         <div className="py-4">
-          <p className="font-semibold">Tout est sur ce téléphone</p>
+          <p className="text-corps font-semibold">Tout est sur ce téléphone</p>
           <p className="mt-1 text-petit text-encre-2">
             Ta collection n’est enregistrée nulle part ailleurs : pas de compte, pas de serveur. Si tu perds ou changes de téléphone, seule une
             sauvegarde permet de la retrouver. Range le fichier dans Fichiers, iCloud ou Drive.
           </p>
-          <p className="mt-3 text-petit">
+          <p className="mt-3 text-petit font-medium">
             {derniere === undefined ? ' ' : derniere ? `Dernière sauvegarde : ${date(derniere)}` : 'Aucune sauvegarde pour l’instant.'}
           </p>
           <div className="mt-4 flex flex-col gap-2">
@@ -284,7 +285,7 @@ function SectionSauvegarde() {
       >
         {restauration && <p className="truncate text-petit text-encre-2">{restauration.fichier.name}</p>}
         {restauration?.erreur && (
-          <p role="alert" className="mt-3 rounded-lg bg-baisse-doux px-3 py-2 text-petit text-baisse">
+          <p role="alert" className="mt-3 rounded-xl bg-baisse-doux px-3 py-2 text-petit text-baisse">
             {restauration.erreur}
           </p>
         )}
@@ -318,7 +319,7 @@ function SectionSauvegarde() {
               />
             </fieldset>
             {mode === 'remplacer' && nbObjets > 0 && (
-              <div className="mt-3 rounded-lg bg-baisse-doux px-3 py-2 text-petit text-baisse">
+              <div className="mt-3 rounded-xl bg-baisse-doux px-3 py-2 text-petit text-baisse">
                 <p>Les {pluriel(nbObjets, 'objet')} de ce téléphone seront effacés, ainsi que tes ventes et souhaits.</p>
                 <button type="button" onClick={() => void exporter()} className="mt-1 min-h-10 font-semibold underline underline-offset-2">
                   Sauvegarder d’abord la collection actuelle
@@ -397,11 +398,13 @@ function SectionCsv() {
           type="button"
           disabled={!pret || lots.length === 0}
           onClick={() => void exporter()}
-          className="flex min-h-14 w-full items-center gap-3 py-3 text-left disabled:opacity-45"
+          className="flex min-h-14 w-full items-center gap-3 py-3 text-left transition-opacity active:opacity-60 disabled:opacity-45"
         >
-          <FileSpreadsheet size={22} className="shrink-0 text-dos" aria-hidden />
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-dos-doux text-encre">
+            <FileSpreadsheet size={18} aria-hidden />
+          </span>
           <span className="min-w-0 flex-1">
-            <span className="block font-medium">Exporter ma collection</span>
+            <span className="block text-corps font-medium">Exporter ma collection</span>
             <span className="block text-petit text-encre-2">Un fichier CSV, avec cotes et prix d’achat</span>
           </span>
         </button>
@@ -409,11 +412,13 @@ function SectionCsv() {
           type="button"
           disabled={!pret}
           onClick={() => entree.current?.click()}
-          className="flex min-h-14 w-full items-center gap-3 py-3 text-left disabled:opacity-45"
+          className="flex min-h-14 w-full items-center gap-3 py-3 text-left transition-opacity active:opacity-60 disabled:opacity-45"
         >
-          <FileUp size={22} className="shrink-0 text-dos" aria-hidden />
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-dos-doux text-encre">
+            <FileUp size={18} aria-hidden />
+          </span>
           <span className="min-w-0 flex-1">
-            <span className="block font-medium">Importer un fichier CSV</span>
+            <span className="block text-corps font-medium">Importer un fichier CSV</span>
             <span className="block text-petit text-encre-2">{pret ? 'Les objets s’ajoutent à ta collection' : 'Disponible une fois le catalogue chargé'}</span>
           </span>
         </button>
@@ -476,7 +481,7 @@ function SectionCsv() {
               <div className="mt-4">
                 <h3 className="font-semibold">Lignes non reconnues</h3>
                 <p className="text-petit text-encre-2">Elles ne seront pas ajoutées. Corrige-les dans le fichier, puis importe-le à nouveau si besoin.</p>
-                <ul className="mt-2 divide-y divide-trait rounded-lg bg-surface-2 px-3 text-petit shadow-[inset_0_0_0_1px_var(--trait)]">
+                <ul className="mt-2 divide-y divide-trait rounded-xl bg-surface-2 px-3 text-petit">
                   {c.rejetees.slice(0, 100).map((l) => (
                     <li key={l.ligne} className="py-2">
                       <span className="font-semibold">Ligne {l.ligne}</span> : {l.raison}
@@ -508,7 +513,7 @@ function SectionAffichage() {
   return (
     <Groupe titre="Affichage">
       <div className="py-3">
-        <p className="mb-2 font-medium">Thème</p>
+        <p className="mb-2.5 text-corps font-medium">Thème</p>
         <Segments
           options={THEMES}
           valeur={theme}
@@ -545,7 +550,7 @@ function SectionValeur() {
       />
       <div className="flex min-h-14 items-center gap-3 py-3">
         <label htmlFor={id} className="min-w-0 flex-1">
-          <span className="block font-medium">État par défaut</span>
+          <span className="block text-corps font-medium">État par défaut</span>
           <span className="mt-0.5 block text-petit text-encre-2">Proposé à chaque ajout de carte</span>
         </label>
         <div className="relative shrink-0">
@@ -553,7 +558,7 @@ function SectionValeur() {
             id={id}
             value={r.etatParDefaut}
             onChange={(e) => void changerReglage('etatParDefaut', e.target.value as ReglagesApp['etatParDefaut'])}
-            className="min-h-11 appearance-none rounded-lg bg-surface py-2 pr-9 pl-3 font-medium text-encre shadow-[inset_0_0_0_1px_var(--trait)]"
+            className="min-h-11 appearance-none rounded-full border border-trait bg-surface-2 py-2 pr-9 pl-3.5 font-medium text-encre"
           >
             {ETATS.map((e) => (
               <option key={e.id} value={e.id}>

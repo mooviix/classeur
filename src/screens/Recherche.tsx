@@ -9,7 +9,7 @@ import { Segments } from '../components/Segments';
 import { Vide } from '../components/Vide';
 import { EtatCatalogue } from '../components/fiche/EtatCatalogue';
 import { LogoExtension } from '../components/fiche/LogoExtension';
-import { CLASSE_CHAMP_NU } from '../components/fiche/outils';
+import { TitreSection } from '../components/fiche/Elements';
 import { chercherEnFond, preparerRecherche } from '../components/fiche/rechercheFond';
 import { FeuilleAjout } from '../components/objets/FeuilleAjout';
 import { LigneScelle } from '../components/objets/LigneScelle';
@@ -125,7 +125,7 @@ export function Recherche() {
   return (
     <div className="mx-auto max-w-xl">
       <header className="pt-sur sticky top-0 z-30 bg-pochette/92 backdrop-blur-md">
-        <div className="px-4 pt-3 pb-2">
+        <div className="px-4 pt-3 pb-2.5">
           <h1 className="sr-only">Recherche</h1>
           <form
             role="search"
@@ -135,7 +135,7 @@ export function Recherche() {
             }}
             className="relative"
           >
-            <Search size={20} aria-hidden className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-encre-2" />
+            <Search size={20} strokeWidth={2.1} aria-hidden className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-encre-2" />
             <input
               ref={champ}
               type="search"
@@ -149,7 +149,7 @@ export function Recherche() {
               placeholder="Nom, 25/102 ou MEW 199"
               value={saisie}
               onChange={(e) => changerSaisie(e.target.value)}
-              className={`${CLASSE_CHAMP_NU} bg-surface pr-12 pl-10 [&::-webkit-search-cancel-button]:appearance-none`}
+              className="h-12 w-full min-w-0 rounded-full bg-surface pr-12 pl-11 text-encre shadow-[inset_0_0_0_1px_var(--trait),0_1px_2px_rgb(21_23_28/0.04)] placeholder:text-encre-3 focus-visible:shadow-[inset_0_0_0_1.5px_var(--encre)] focus-visible:outline-none [&::-webkit-search-cancel-button]:appearance-none"
             />
             {saisie && (
               <button
@@ -159,13 +159,13 @@ export function Recherche() {
                   changerSaisie('');
                   champ.current?.focus();
                 }}
-                className="absolute top-0.5 right-0.5 flex size-11 items-center justify-center rounded-full text-encre-2 active:bg-surface-2"
+                className="absolute top-1/2 right-1 flex size-10 -translate-y-1/2 items-center justify-center rounded-full text-encre-2 active:bg-surface-2"
               >
                 <X size={20} aria-hidden />
               </button>
             )}
           </form>
-          <div className="mt-2">
+          <div className="mt-2.5">
             <Segments
               options={[
                 { id: 'cartes', nom: `Cartes${resultats ? compte(resultats.cartes.length, nbCartes) : ''}` },
@@ -274,10 +274,10 @@ function Resultats({
     const plus = r.cartes.length > nbCartes;
     return (
       <div aria-busy={enCours} className={`transition-opacity ${enCours ? 'opacity-60' : ''}`}>
-        <p className="mb-3 text-petit text-encre-2">
+        <p className="mb-3 px-1 text-petit text-encre-2">
           {plus ? `Les ${nombre(nbCartes)} premières cartes : précise ta recherche si tu ne trouves pas.` : cartes.length > 1 ? `${cartes.length} cartes` : '1 carte'}
         </p>
-        <ul className="grid grid-cols-3 gap-x-3 gap-y-4">
+        <ul className="cascade grid grid-cols-3 gap-x-2.5 gap-y-4">
           {cartes.map((c, i) => (
             <li key={c.id}>
               <TuileCarte
@@ -293,7 +293,7 @@ function Resultats({
           ))}
         </ul>
         {plus && (
-          <div className="mt-5">
+          <div className="mt-6">
             <Bouton genre="secondaire" plein onClick={onPlusCartes}>
               Voir plus de cartes
             </Bouton>
@@ -328,7 +328,7 @@ function Resultats({
   const plus = r.scelles.length > nbScelles;
   return (
     <div aria-busy={enCours} className={`transition-opacity ${enCours ? 'opacity-60' : ''}`}>
-      <p className="mb-1 text-petit text-encre-2">
+      <p className="mb-3 px-1 text-petit text-encre-2">
         {plus ? `Les ${nombre(nbScelles)} premiers produits, les plus récents d’abord` : scelles.length > 1 ? `${scelles.length} produits, les plus récents d’abord` : '1 produit'}
       </p>
       <ListeScelles d={d} scelles={scelles} />
@@ -346,18 +346,22 @@ function Resultats({
 function ListeScelles({ d, scelles }: { d: Donnees; scelles: Scelle[] }) {
   const quantites = useQuantites();
   return (
-    <ul>
+    <ul className="bloc cascade divide-y divide-grille px-3">
       {scelles.map((s) => {
         const p = prixScelle(d, s);
         const q = quantites?.get(`scelle:${s.ref}`) ?? 0;
         return (
-          <li key={s.ref} className="border-b border-trait last:border-b-0">
+          <li key={s.ref}>
             <LigneScelle
               scelle={s}
               droite={
                 <>
                   <span className="chiffres block text-petit font-semibold">{euros(p?.tendance ?? p?.moy30 ?? null)}</span>
-                  {q > 0 && <span className="chiffres block text-micro font-semibold text-dos">×{q}</span>}
+                  {q > 0 && (
+                    <span className="chiffres mt-1 inline-block rounded-full bg-encre px-1.5 text-micro font-bold text-pochette">
+                      <span className="sr-only">Dans ta collection : </span>×{q}
+                    </span>
+                  )}
                 </>
               }
             />
@@ -374,33 +378,43 @@ function AccueilCartes({ d, onExemple }: { d: Donnees; onExemple: (q: string) =>
   const recentes = d.extensions.slice(0, 6);
   return (
     <>
-      <h2 className="semi-large text-corps font-bold">Exemples de recherche</h2>
-      <p className="mt-1 text-petit text-encre-2">Un nom, un numéro imprimé sur la carte ou le code de l’extension suivi du numéro.</p>
+      <TitreSection>Exemples de recherche</TitreSection>
+      <p className="-mt-1 px-1 text-petit text-encre-2">Un nom, le numéro imprimé sur la carte, ou le code de l’extension suivi du numéro.</p>
       <ul className="mt-3 flex flex-wrap gap-2">
         {EXEMPLES.map((ex) => (
           <li key={ex}>
             <button
               type="button"
               onClick={() => onExemple(ex)}
-              className="inline-flex min-h-11 items-center rounded-xl bg-surface-2 px-3 text-petit font-semibold shadow-[inset_0_0_0_1px_var(--trait)] active:bg-trait/60"
+              className="appui inline-flex h-[2.375rem] items-center rounded-full border border-trait bg-surface px-3.5 text-petit font-semibold active:bg-surface-2"
             >
-              <span className={/\d/.test(ex) ? 'etroit chiffres' : ''}>{ex}</span>
+              <span className={/\d/.test(ex) ? 'chiffres' : ''}>{ex}</span>
             </button>
           </li>
         ))}
       </ul>
 
-      <h2 className="semi-large mt-8 text-corps font-bold">Dernières extensions</h2>
-      <ul className="mt-2 border-t border-trait">
+      <div className="mt-8">
+        <TitreSection
+          droite={
+            <Link href="/extensions" className="-my-2 inline-flex min-h-10 items-center font-semibold text-encre active:opacity-70">
+              Toutes
+            </Link>
+          }
+        >
+          Dernières extensions
+        </TitreSection>
+      </div>
+      <ul className="bloc divide-y divide-grille overflow-hidden">
         {recentes.map((e) => (
           <li key={e.id}>
-            <Link href={`/extensions/${encodeURIComponent(e.id)}`} className="flex min-h-16 items-center gap-3 border-b border-trait py-2 active:bg-surface-2">
-              <span className="pochette flex h-12 w-20 shrink-0 items-center justify-center p-1.5">
+            <Link href={`/extensions/${encodeURIComponent(e.id)}`} className="flex min-h-16 items-center gap-3 px-3 py-2.5 active:bg-surface-2">
+              <span className="flex h-11 w-[4.5rem] shrink-0 items-center justify-center rounded-xl bg-surface-2 p-1.5">
                 <LogoExtension ext={e} className="max-h-full max-w-full object-contain" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-semibold">{e.nom}</span>
-                <span className="block truncate text-petit text-encre-2">
+                <span className="block truncate text-[0.75rem] leading-4 text-encre-2">
                   {e.sortie ? `Sortie le ${date(e.sortie)}` : e.serie.nom}
                   {e.cartes.length > 0 && <span className="chiffres">, {nombre(e.cartes.length)} cartes</span>}
                 </span>
@@ -410,9 +424,6 @@ function AccueilCartes({ d, onExemple }: { d: Donnees; onExemple: (q: string) =>
           </li>
         ))}
       </ul>
-      <Link href="/extensions" className="mt-2 inline-flex min-h-11 items-center font-semibold text-dos">
-        Toutes les extensions
-      </Link>
     </>
   );
 }
@@ -451,13 +462,13 @@ function CatalogueScelles({ d }: { d: Donnees }) {
   };
 
   const puce = (actif: boolean) =>
-    `inline-flex min-h-11 shrink-0 items-center rounded-xl px-3 text-petit font-semibold whitespace-nowrap ${
-      actif ? 'bg-dos text-sur-dos' : 'bg-surface-2 text-encre shadow-[inset_0_0_0_1px_var(--trait)] active:bg-trait/60'
+    `appui inline-flex h-[2.375rem] shrink-0 items-center rounded-full px-3.5 text-petit font-semibold whitespace-nowrap transition-[background-color,color,transform] duration-200 ${
+      actif ? 'bg-encre text-pochette' : 'border border-trait bg-surface text-encre active:bg-surface-2'
     }`;
 
   return (
     <>
-      <div role="radiogroup" aria-label="Type de produit" className="sans-barre -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+      <div role="radiogroup" aria-label="Type de produit" className="sans-barre -mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1">
         <button type="button" role="radio" aria-checked={type == null} onClick={(e) => choisirType(null, e.currentTarget)} className={puce(type == null)}>
           Tous
         </button>
@@ -479,7 +490,7 @@ function CatalogueScelles({ d }: { d: Donnees }) {
             setExt(e.target.value);
             setNb(PAS_SCELLES);
           }}
-          className={`${CLASSE_CHAMP_NU} appearance-none bg-surface-2 pr-10 pl-3 font-medium`}
+          className="h-12 w-full min-w-0 appearance-none rounded-full bg-surface pr-11 pl-4 font-medium text-encre shadow-[inset_0_0_0_1px_var(--trait)] focus-visible:shadow-[inset_0_0_0_1.5px_var(--encre)] focus-visible:outline-none"
         >
           <option value="">Toutes les extensions</option>
           {extensions.map((e) => (
@@ -489,10 +500,10 @@ function CatalogueScelles({ d }: { d: Donnees }) {
             </option>
           ))}
         </select>
-        <ChevronDown size={20} aria-hidden className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-encre-2" />
+        <ChevronDown size={20} aria-hidden className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-encre-2" />
       </div>
 
-      <p className="mt-4 mb-1 text-petit text-encre-2">
+      <p className="mt-4 mb-3 px-1 text-petit text-encre-2">
         {liste.length === 0 ? 'Aucun produit avec ces filtres.' : `${nombre(liste.length)} produit${liste.length > 1 ? 's' : ''}, les plus récents d’abord`}
       </p>
       {liste.length === 0 ? (
@@ -509,7 +520,7 @@ function CatalogueScelles({ d }: { d: Donnees }) {
         <ListeScelles d={d} scelles={liste.slice(0, nb)} />
       )}
       {liste.length > nb && (
-        <div className="mt-4">
+        <div className="mt-5">
           <Bouton genre="secondaire" plein onClick={() => setNb((n) => n + PAS_SCELLES)}>
             Voir plus ({nombre(liste.length - nb)} restants)
           </Bouton>

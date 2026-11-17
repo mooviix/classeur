@@ -97,26 +97,31 @@ export function Extensions() {
 
   return (
     <Ecran titre="Extensions" sousTitre={sousTitre} barre={barre}>
-      <ChampFiltre valeur={filtre} onChange={setFiltre} placeholder="Nom ou code (MEW, PRE…)" label="Filtrer les extensions par nom ou par code" />
+      <div className="pt-1">
+        <ChampFiltre valeur={filtre} onChange={setFiltre} placeholder="Nom ou code (MEW, PRE…)" label="Filtrer les extensions par nom ou par code" />
+      </div>
 
       {!resultat || !suivi ? (
         <Chargement forme="liste" texte="Lecture de ta collection…" />
       ) : resultat.nb === 0 ? (
         <VideExtensions vue={vue} filtre={filtre} commencees={resultat.commencees} onToutes={() => setVue('toutes')} onEffacer={() => setFiltre('')} />
       ) : (
-        resultat.groupes.map((g) => (
-          <section key={g.serie.id} aria-labelledby={`serie-${g.serie.id}`} className="mt-4">
-            <h2 id={`serie-${g.serie.id}`} className="flex items-baseline justify-between gap-2 border-b border-trait pb-1.5">
-              <span className="semi-large truncate text-petit font-bold">{g.serie.nom || 'Autres'}</span>
-              <span className="shrink-0 text-micro text-encre-2">{pluriel(g.extensions.length, 'extension')}</span>
-            </h2>
-            <ul className="divide-y divide-trait">
-              {g.extensions.map((ext) => (
-                <LigneExtension key={ext.id} ext={ext} suivi={suivi.get(ext.id)} />
-              ))}
-            </ul>
-          </section>
-        ))
+        <div className="pb-6">
+          {resultat.groupes.map((g) => (
+            <section key={g.serie.id} aria-labelledby={`serie-${g.serie.id}`} className="mt-6">
+              <h2 id={`serie-${g.serie.id}`} className="flex items-baseline justify-between gap-3 px-1 pb-2.5">
+                <span className="truncate text-lg leading-tight font-bold">{g.serie.nom || 'Autres'}</span>
+                <span className="shrink-0 font-sans text-petit font-normal tracking-normal text-encre-2">{pluriel(g.extensions.length, 'extension')}</span>
+              </h2>
+              {/* Un bloc blanc par série ; les premières lignes apparaissent en cascade */}
+              <ul className="bloc cascade -mx-1 overflow-hidden">
+                {g.extensions.map((ext) => (
+                  <LigneExtension key={ext.id} ext={ext} suivi={suivi.get(ext.id)} />
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
       )}
     </Ecran>
   );
@@ -126,23 +131,31 @@ const LigneExtension = memo(function LigneExtension({ ext, suivi }: { ext: Exten
   const total = nbOfficiel(ext);
   const possedees = suivi?.officielles ?? 0;
   return (
-    <li>
-      <Link href={`/extensions/${encodeURIComponent(ext.id)}`} className="flex items-center gap-3 py-3 active:opacity-70">
-        <LogoExtension ext={ext} />
-        <span className="min-w-0 flex-1">
-          <span className="flex items-baseline gap-2">
-            <span className="min-w-0 flex-1 truncate font-semibold">{ext.nom}</span>
-            {suivi && suivi.valeur > 0 && <Montant valeur={suivi.valeur} className="chiffres shrink-0 text-petit font-semibold" />}
-          </span>
-          <span className="mt-0.5 flex items-baseline gap-2 text-petit text-encre-2">
-            {ext.code && <span className="etroit font-semibold tracking-wide">{ext.code}</span>}
-            <span className="min-w-0 flex-1 truncate">{ext.sortie ? date(ext.sortie) : ''}</span>
-            <span className={`chiffres shrink-0 ${suivi ? '' : 'text-encre-3'}`}>
-              {nombre(possedees)} / {nombre(total)}
+    <li className="group">
+      <Link href={`/extensions/${encodeURIComponent(ext.id)}`} className="block px-4 active:bg-surface-2">
+        {/* filet entre les lignes, en retrait des bords du bloc */}
+        <span className="flex items-center gap-3.5 border-t border-trait py-3.5 group-first:border-t-0">
+          <LogoExtension ext={ext} />
+          <span className="min-w-0 flex-1">
+            <span className="flex items-baseline gap-3">
+              <span className="min-w-0 flex-1 truncate text-corps leading-snug font-semibold">{ext.nom}</span>
+              {suivi && suivi.valeur > 0 && <Montant valeur={suivi.valeur} className="chiffres shrink-0 text-petit font-semibold" />}
             </span>
-            {suivi && <span className="chiffres w-10 shrink-0 text-right font-semibold text-encre">{pourcentEntier(possedees / total)}</span>}
+            <span className="mt-0.5 flex items-baseline gap-2 text-xs text-encre-2">
+              {ext.code && <span className="font-semibold tracking-wide">{ext.code}</span>}
+              <span className="min-w-0 flex-1 truncate">{ext.sortie ? date(ext.sortie) : ''}</span>
+              <span className={`chiffres shrink-0 ${suivi ? 'font-semibold text-encre' : 'text-encre-3'}`}>
+                {nombre(possedees)} / {nombre(total)}
+              </span>
+            </span>
+            <span className="mt-1.5 flex h-4 items-center gap-2">
+              <BarreCompletion valeur={possedees} max={total} label={`Progression de ${ext.nom}`} className="flex-1" />
+              {/* colonne gardée même vide : les barres restent alignées d'une ligne à l'autre */}
+              <span className="chiffres w-9 shrink-0 text-right text-xs font-semibold text-encre-2">
+                {suivi && total > 0 ? pourcentEntier(possedees / total) : ''}
+              </span>
+            </span>
           </span>
-          <BarreCompletion valeur={possedees} max={total} label={`Progression de ${ext.nom}`} className="mt-1.5" />
         </span>
       </Link>
     </li>

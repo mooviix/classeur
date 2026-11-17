@@ -1,4 +1,4 @@
-// Grande image de la fiche carte : le seul moment « expressif » de l'app.
+// Grande image de la fiche carte : la carte nette au centre de la vitrine, avec une belle ombre portée.
 // Glisser le doigt sur la carte fait courir un reflet holographique dessous (avec une très légère inclinaison) ;
 // un tap ouvre le zoom plein écran. Si le téléphone demande moins d'animations : ni reflet ni inclinaison.
 // touch-action: pan-y → un glisser vertical fait toujours défiler la page ; seul un départ horizontal anime le reflet.
@@ -119,7 +119,13 @@ export function GrandeImage({ haute, basse, alt, repli, onZoom, className = '' }
         className="group relative transition-transform duration-500 ease-out will-change-transform data-[reflet=1]:duration-75"
         style={{ '--hx': '50%', '--hy': '50%' } as CSSProperties}
       >
-        <div className="pochette format-carte coins-carte relative overflow-hidden">
+        <div
+          className={`format-carte coins-carte relative overflow-hidden bg-surface-2 ${
+            aucuneImage
+              ? 'shadow-[inset_0_0_0_1px_var(--trait)]'
+              : 'shadow-[0_24px_40px_-14px_rgb(21_23_28/0.42),0_2px_6px_rgb(21_23_28/0.18)] dark:shadow-[0_24px_44px_-14px_rgb(0_0_0/0.8),0_2px_6px_rgb(0_0_0/0.45)]'
+          }`}
+        >
           {haut !== 'ok' && !basseKo && basse && (
             <img src={basse} alt="" aria-hidden draggable={false} onError={() => setBasseKo(true)} className="absolute inset-0 size-full object-cover" />
           )}

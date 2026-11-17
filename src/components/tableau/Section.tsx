@@ -1,32 +1,42 @@
+import { ChevronRight } from 'lucide-react';
 import { useId, type ReactNode } from 'react';
 import { Link } from 'wouter';
 
-/** Une section du tableau de bord : titre (phrase en minuscules) et lien discret à droite (« Voir tout »). */
+/**
+ * Une section du tableau de bord : titre en Bricolage (18 px, phrase en minuscules) et, à droite,
+ * un lien discret (« Voir tout ») ou une précision (« sur 30 jours », un petit choix de période).
+ */
 export function Section({
   titre,
   lien,
+  aside,
   children,
-  className = 'mt-10',
+  className = 'mt-6',
 }: {
   titre: ReactNode;
   lien?: { href: string; texte: string };
+  /** Contenu à droite du titre quand il n'y a pas de lien. */
+  aside?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
   const id = useId();
   return (
     <section aria-labelledby={id} className={className}>
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <h2 id={id} className="semi-large text-corps font-bold tracking-tight">
+      <div className="mb-3 flex min-h-8 items-center justify-between gap-3">
+        <h2 id={id} className="min-w-0 text-[1.125rem] leading-6 font-bold">
           {titre}
         </h2>
-        {lien && (
+        {lien ? (
           <Link
             href={lien.href}
-            className="-mr-2 inline-flex min-h-10 shrink-0 items-center rounded-lg px-2 text-petit font-semibold text-dos active:bg-dos-doux"
+            className="appui -my-1 -mr-1 inline-flex min-h-10 shrink-0 items-center gap-0.5 rounded-full pr-0.5 pl-2 text-petit font-semibold text-encre-2"
           >
             {lien.texte}
+            <ChevronRight size={16} strokeWidth={2.2} aria-hidden />
           </Link>
+        ) : (
+          aside
         )}
       </div>
       {children}
@@ -34,16 +44,20 @@ export function Section({
   );
 }
 
+/** Message court à la place d'une liste vide, dans un bloc. */
+export function BlocVide({ children }: { children: ReactNode }) {
+  return <p className="bloc px-4 py-4 text-petit text-encre-2">{children}</p>;
+}
+
 type Genre = 'principal' | 'secondaire' | 'scan';
 
 const STYLES: Record<Genre, string> = {
-  principal: 'bg-dos text-sur-dos active:brightness-95',
-  secondaire: 'bg-surface-2 text-encre shadow-[inset_0_0_0_1px_var(--trait)] active:bg-trait/60',
-  // Le jaune de la bordure des cartes est réservé au scan.
-  scan: 'bg-dos text-sur-dos active:brightness-95',
+  principal: 'bg-dos text-sur-dos',
+  secondaire: 'border border-trait bg-surface text-encre',
+  scan: '',
 };
 
-/** Lien qui a l'allure d'un bouton (navigation vers un écran). */
+/** Lien qui a l'allure d'un bouton (navigation vers un écran). « scan » : graphite cerclé du dégradé holo, comme le bouton Scan. */
 export function LienBouton({
   href,
   genre = 'principal',
@@ -57,12 +71,25 @@ export function LienBouton({
   plein?: boolean;
   children: ReactNode;
 }) {
+  if (genre === 'scan') {
+    return (
+      <Link
+        href={href}
+        className={`appui bg-holo inline-flex rounded-[16px] p-[2px] shadow-[0_8px_20px_-6px_rgb(21_23_28/0.35)] ${plein ? 'w-full' : ''}`}
+      >
+        <span className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-[14px] bg-[#15171c] px-4 font-semibold text-white">
+          {icone}
+          {children}
+        </span>
+      </Link>
+    );
+  }
   return (
     <Link
       href={href}
-      className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 font-semibold transition-[filter,background-color] ${
-        STYLES[genre]
-      } ${plein ? 'w-full' : ''}`}
+      className={`appui inline-flex min-h-12 items-center justify-center gap-2 rounded-[14px] px-4 font-semibold ${STYLES[genre]} ${
+        plein ? 'w-full' : ''
+      }`}
     >
       {icone}
       {children}
@@ -71,12 +98,36 @@ export function LienBouton({
 }
 
 /**
- * Chiffre-vedette (un seul par écran) : 48 px au moins, 52 px dès 360 px de large, même famille,
- * chiffres proportionnels. Sous 360 px on garde la largeur normale d'Archivo (axe wdth à 100 : Tailwind
- * réécrit font-stretch en font-width, inconnu de Safari) : mesuré, « −9 999,99 € » et « 1 234 567 € »
- * tiennent alors sur un écran de 320 px.
+ * Pastille de variation (maquette « vitrine holo ») : triangle + texte, vert si hausse, rouge si baisse.
+ * `v` donne le sens ; le contenu (montant ou pourcentage) porte toujours son signe.
  */
-export const VEDETTE = 'large text-[clamp(2.4rem,11.8vw,3rem)] leading-none font-bold whitespace-nowrap';
+export function Pastille({ v, children }: { v: number | null | undefined; children: ReactNode }) {
+  const s = v == null || Math.abs(v) < 0.005 ? 'stable' : v > 0 ? 'hausse' : 'baisse';
+  const couleurs =
+    s === 'hausse' ? 'bg-hausse-doux text-hausse' : s === 'baisse' ? 'bg-baisse-doux text-baisse' : 'bg-surface-2 text-encre-2';
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-[3px] text-petit font-semibold whitespace-nowrap ${couleurs}`}>
+      {s !== 'stable' && (
+        <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden className="shrink-0">
+          <path d={s === 'hausse' ? 'M5 1.5 9 8H1z' : 'M5 8.5 1 2h8z'} fill="currentColor" />
+        </svg>
+      )}
+      {children}
+    </span>
+  );
+}
+
+/**
+ * Chiffre-vedette (un seul par écran) : Bricolage, 46 px sur un téléphone de 390 px (11,8 vw),
+ * entre 38,4 et 48 px, chiffres proportionnels (pas de colonnes à aligner).
+ */
+export const VEDETTE = 'large text-[clamp(2.4rem,11.8vw,3rem)] leading-[1.05] font-bold whitespace-nowrap';
+
+/**
+ * Contrôle segmenté « nu » : les pilules seules, sans le cadre du composant Segments
+ * (dans un bloc ou à côté d'un titre, comme sur la maquette). À poser sur le parent direct de <Segments>.
+ */
+export const SEGMENTS_NUS = '[&>[role=radiogroup]]:border-transparent [&>[role=radiogroup]]:bg-transparent [&>[role=radiogroup]]:p-0';
 
 /** « 1 carte », « 248 cartes », « 1 248 objets ». */
 export function pluriel(n: number, singulier: string, pluriel = `${singulier}s`): string {

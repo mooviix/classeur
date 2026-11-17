@@ -7,7 +7,7 @@ export function Variation({ ratio, taille = 'petit' }: { ratio: number | null | 
     s === 'hausse' ? 'bg-hausse-doux text-hausse' : s === 'baisse' ? 'bg-baisse-doux text-baisse' : 'bg-surface-2 text-encre-2';
   return (
     <span
-      className={`chiffres inline-flex items-center rounded-md px-1.5 font-semibold ${
+      className={`chiffres inline-flex items-center rounded-full px-2 py-px font-semibold ${
         taille === 'micro' ? 'text-micro' : 'text-petit'
       } ${couleurs}`}
     >

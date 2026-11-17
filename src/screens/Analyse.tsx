@@ -7,19 +7,18 @@ import { Ecran } from '../components/Ecran';
 import { Feuille } from '../components/Feuille';
 import { Montant } from '../components/Montant';
 import { Segments } from '../components/Segments';
-import { Variation } from '../components/Variation';
 import { Vide } from '../components/Vide';
 import { AttenteDonnees } from '../components/tableau/AttenteDonnees';
 import { BarresClassees, type Barre } from '../components/tableau/BarresClassees';
 import { detailObjet, hrefObjet, LigneObjet, nomObjet } from '../components/tableau/LigneObjet';
-import { couleurSens, LienBouton, pluriel, Section, VEDETTE } from '../components/tableau/Section';
+import { BlocVide, couleurSens, LienBouton, Pastille, pluriel, Section, VEDETTE } from '../components/tableau/Section';
 import { TableauObjets, type LigneAnalyse } from '../components/tableau/TableauObjets';
 import { useDonnees, type Donnees } from '../data/catalogue';
 import { calculerBilan, objetDe, valoriser, type Bilan, type ObjetCatalogue } from '../data/valeur';
 import { annulerVente, beneficeVente, usePossessions, useVentes } from '../db/collection';
 import { useReglages, type Reglages } from '../db/reglages';
 import type { Possession, Vente } from '../db/schema';
-import { dateCourte } from '../lib/format';
+import { dateCourte, pourcent } from '../lib/format';
 
 type Filtre = 'tout' | 'carte' | 'scelle';
 
@@ -97,17 +96,23 @@ function Contenu({ d, lots, ventes, r, filtre }: { d: Donnees; lots: Possession[
       {/* Une seule catégorie ne fait pas un graphique : la répartition n'apparaît qu'à partir de deux. */}
       {parExtension.length > 1 && (
         <Section titre="Valeur par extension">
-          <BarresClassees titre="Valeur par extension" barres={parExtension} nomAutres="Autres extensions" nomColonne="Extension" />
+          <div className="bloc px-4 pt-4 pb-1.5">
+            <BarresClassees titre="Valeur par extension" barres={parExtension} nomAutres="Autres extensions" nomColonne="Extension" />
+          </div>
         </Section>
       )}
       {filtre !== 'carte' && parType.length > 1 && (
         <Section titre="Valeur par type de scellé">
-          <BarresClassees titre="Valeur par type de scellé" barres={parType} nomAutres="Autres types" nomColonne="Type" />
+          <div className="bloc px-4 pt-4 pb-1.5">
+            <BarresClassees titre="Valeur par type de scellé" barres={parType} nomAutres="Autres types" nomColonne="Type" />
+          </div>
         </Section>
       )}
       {lignes.length > 0 && (
-        <Section titre="Détail par objet">
-          <TableauObjets lignes={lignes} legende="Détail par objet" />
+        <Section titre="Détail par objet" aside={<span className="shrink-0 text-petit text-encre-2">{pluriel(lignes.length, 'objet')}</span>}>
+          <div className="bloc px-3 pt-1 pb-1">
+            <TableauObjets lignes={lignes} legende="Détail par objet" />
+          </div>
         </Section>
       )}
       <Ventes d={d} ventes={ventesF} />
@@ -119,12 +124,12 @@ function Contenu({ d, lots, ventes, r, filtre }: { d: Donnees; lots: Possession[
 
 function LigneChiffre({ terme, detail, children }: { terme: string; detail?: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex min-h-12 items-center justify-between gap-3 py-2.5">
+    <div className="flex min-h-14 items-center justify-between gap-3 py-3">
       <dt className="min-w-0">
-        <span className="block text-encre-2">{terme}</span>
-        {detail && <span className="block text-micro text-encre-3">{detail}</span>}
+        <span className="block text-corps text-encre-2">{terme}</span>
+        {detail && <span className="mt-0.5 block text-xs text-encre-3">{detail}</span>}
       </dt>
-      <dd className="chiffres shrink-0 text-right">{children}</dd>
+      <dd className="chiffres shrink-0 text-right text-corps">{children}</dd>
     </div>
   );
 }
@@ -157,35 +162,35 @@ function Indicateurs({ bilan, lots, ventes }: { bilan: Bilan; lots: Possession[]
   const partiel = pv != null && avecAchat < total;
 
   return (
-    <section aria-labelledby={id} className="pt-2">
+    <section aria-labelledby={id} className="pt-3">
       {pv != null ? (
         <>
-          <h2 id={id} className="text-petit text-encre-2">
+          <h2 id={id} className="font-sans text-petit font-normal tracking-normal text-encre-2">
             Plus-value latente
           </h2>
-          <p className={`mt-1 ${VEDETTE} ${couleurSens(pv)}`}>
-            <Montant valeur={pv} signe />
+          <p className={`mt-0.5 ${VEDETTE} ${couleurSens(pv)}`}>
+            <Montant valeur={pv} signe anime />
           </p>
-          <p className="mt-3 flex flex-wrap items-center gap-2">
-            <Variation ratio={ratio} />
-            <span className="text-petit text-encre-2">par rapport à ce que tu as payé</span>
+          <p className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-petit">
+            {ratio != null && <Pastille v={pv}>{pourcent(ratio)}</Pastille>}
+            <span className="text-encre-2">par rapport à ce que tu as payé</span>
           </p>
         </>
       ) : (
         <>
-          <h2 id={id} className="text-petit text-encre-2">
+          <h2 id={id} className="font-sans text-petit font-normal tracking-normal text-encre-2">
             Valeur actuelle
           </h2>
-          <p className={`mt-1 ${VEDETTE}`}>
-            <Montant valeur={bilan.valeur} />
+          <p className={`mt-0.5 ${VEDETTE}`}>
+            <Montant valeur={bilan.valeur} anime />
           </p>
-          <p className="mt-3 text-petit text-encre-2">
+          <p className="mt-2.5 text-petit text-encre-2">
             Note tes prix d’achat sur les fiches : l’analyse comparera ce que tu as payé à la cote du jour.
           </p>
         </>
       )}
 
-      <dl className="pochette mt-6 divide-y divide-trait px-4">
+      <dl className="bloc mt-5 divide-y divide-trait px-4">
         {pv != null && (
           <>
             <LigneChiffre terme="Investi">
@@ -217,8 +222,9 @@ function Indicateurs({ bilan, lots, ventes }: { bilan: Bilan; lots: Possession[]
         </LigneChiffre>
       </dl>
       {partiel && (
-        <p className="mt-2 text-micro text-encre-2">
-          Investi et plus-value portent sur les {pluriel(avecAchat, 'objet')} dont tu as noté le prix d’achat (sur {total}).
+        <p className="mt-2 px-1 text-xs text-encre-2">
+          Investi et plus-value portent sur {avecAchat > 1 ? `les ${pluriel(avecAchat, 'objet')}` : 'l’objet'} dont tu as noté le prix d’achat (sur{' '}
+          {total}).
         </p>
       )}
     </section>
@@ -315,11 +321,9 @@ function Ventes({ d, ventes }: { d: Donnees; ventes: Vente[] }) {
   if (ventes.length === 0) {
     return (
       <Section titre="Ventes">
-        <p className="pochette px-4 py-4 text-petit text-encre-2">
-          Quand tu vends un objet depuis sa fiche, la vente et son bénéfice apparaissent ici.
-        </p>
+        <BlocVide>Quand tu vends un objet depuis sa fiche, la vente et son bénéfice apparaissent ici.</BlocVide>
         {message && (
-          <p role="status" className="mt-2 text-petit">
+          <p role="status" className="mt-2 px-1 text-petit">
             {message}
           </p>
         )}
@@ -347,13 +351,13 @@ function Ventes({ d, ventes }: { d: Donnees; ventes: Vente[] }) {
   };
 
   return (
-    <Section titre={`Ventes (${ventes.length})`}>
+    <Section titre="Ventes" aside={<span className="shrink-0 text-petit text-encre-2">{pluriel(ventes.length, 'vente')}</span>}>
       {message && (
-        <p role="status" className="mb-2 text-petit">
+        <p role="status" className="mb-3 px-1 text-petit">
           {message}
         </p>
       )}
-      <ul className="divide-y divide-trait">
+      <ul className="bloc divide-y divide-trait px-4">
         {ventes.slice(0, limite).map((v) => {
           const o = objetDe(d, v.type, v.ref);
           const b = beneficeVente(v);
@@ -366,18 +370,18 @@ function Ventes({ d, ventes }: { d: Donnees; ventes: Vente[] }) {
           const benefice = (
             <>
               {b == null ? (
-                <span className="block text-petit text-encre-3">—</span>
+                <span className="block text-corps text-encre-3">—</span>
               ) : (
-                <Montant valeur={b} signe className={`chiffres block text-petit font-semibold ${couleurSens(b)}`} />
+                <Montant valeur={b} signe className={`chiffres block text-corps font-semibold ${couleurSens(b)}`} />
               )}
-              <span className="block text-micro text-encre-2">{b == null ? 'achat inconnu' : 'bénéfice'}</span>
+              <span className="mt-0.5 block text-xs text-encre-2">{b == null ? 'achat inconnu' : 'bénéfice'}</span>
             </>
           );
           const action = (
             <button
               type="button"
               onClick={() => setAAnnuler(v)}
-              className="min-h-11 shrink-0 rounded-lg px-2 text-petit font-semibold text-dos active:bg-dos-doux"
+              className="appui -mr-2 min-h-11 shrink-0 rounded-full px-2 text-petit font-semibold text-encre-2"
             >
               Annuler
             </button>
@@ -387,10 +391,10 @@ function Ventes({ d, ventes }: { d: Donnees; ventes: Vente[] }) {
               {o ? (
                 <LigneObjet objet={o} variante={v.variante} sousTitre={detail} droite={benefice} action={action} />
               ) : (
-                <div className="flex min-h-16 items-center gap-3 py-2">
+                <div className="flex min-h-16 items-center gap-3 py-2.5">
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-petit font-semibold">Objet retiré du catalogue</span>
-                    <span className="block truncate text-micro text-encre-2">{detail}</span>
+                    <span className="block truncate text-corps leading-snug font-semibold">Objet retiré du catalogue</span>
+                    <span className="mt-0.5 block truncate text-petit text-encre-2">{detail}</span>
                   </span>
                   <span className="shrink-0 text-right">{benefice}</span>
                   {action}
@@ -401,7 +405,7 @@ function Ventes({ d, ventes }: { d: Donnees; ventes: Vente[] }) {
         })}
       </ul>
       {ventes.length > limite && (
-        <Bouton genre="discret" plein onClick={() => setLimite((n) => n + PAS_VENTES)}>
+        <Bouton genre="discret" plein className="mt-1" onClick={() => setLimite((n) => n + PAS_VENTES)}>
           Voir plus de ventes ({ventes.length - limite} restantes)
         </Bouton>
       )}

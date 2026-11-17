@@ -1,3 +1,4 @@
+import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { Montant } from '../Montant';
 import { pluriel } from './Section';
@@ -14,9 +15,10 @@ const fmtPart = new Intl.NumberFormat('fr-FR', { style: 'percent', maximumFracti
 const somme = (l: Barre[], k: 'valeur' | 'objets') => l.reduce((s, b) => s + b[k], 0);
 
 /**
- * Barres horizontales classées (une seule teinte) : nom au-dessus, barre de 16 px qui part d'une ligne de base
- * commune, bout arrondi côté valeur, montant en bout de barre. Au-delà de `max` barres, la fin est regroupée
- * dans « Autres ». Le tableau (toutes les lignes, avec la part en %) s'ouvre en dessous.
+ * Barres horizontales classées (une seule teinte, graphite) : nom au-dessus, barre fine de 8 px qui part d'une ligne
+ * de base commune (bout arrondi côté valeur) et se déploie à l'affichage, montant en bout de barre.
+ * Au-delà de `max` barres, la fin est regroupée dans « Autres ». Le tableau (toutes les lignes, avec la part en %)
+ * s'ouvre en dessous.
  */
 export function BarresClassees({
   titre,
@@ -48,18 +50,18 @@ export function BarresClassees({
 
   return (
     <div>
-      <ul aria-label={titre} className="space-y-2.5">
-        {visibles.map((b) => (
+      <ul aria-label={titre} className="space-y-3.5">
+        {visibles.map((b, i) => (
           <li key={b.id}>
             <div className="flex items-baseline justify-between gap-3">
-              <span className="min-w-0 truncate text-petit">{b.nom}</span>
-              <span className="shrink-0 text-micro text-encre-2">{pluriel(b.objets, 'objet')}</span>
+              <span className="min-w-0 truncate text-petit font-medium">{b.nom}</span>
+              <span className="shrink-0 text-xs text-encre-3">{pluriel(b.objets, 'objet')}</span>
             </div>
-            <div className="mt-1 flex items-center gap-2">
+            <div className="mt-1.5 flex items-center gap-2.5">
               <span
                 aria-hidden
-                className="h-4 shrink-0 rounded-r-[4px] bg-serie-1"
-                style={{ width: `calc((100% - 6rem) * ${b.valeur / plusGrande})`, minWidth: 2 }}
+                className="h-2 shrink-0 origin-left rounded-r-full bg-serie-1 transition-transform duration-700 ease-douce starting:scale-x-0"
+                style={{ width: `calc((100% - 6.5rem) * ${b.valeur / plusGrande})`, minWidth: 2, transitionDelay: `${Math.min(i, 8) * 40}ms` }}
               />
               <Montant valeur={b.valeur} className="chiffres shrink-0 text-petit font-semibold whitespace-nowrap" />
             </div>
@@ -70,26 +72,27 @@ export function BarresClassees({
         type="button"
         onClick={() => setTableau((t) => !t)}
         aria-expanded={tableau}
-        className="mt-2 min-h-8 text-micro text-encre-2 underline decoration-trait underline-offset-2"
+        className="mt-3 -ml-1 inline-flex min-h-10 items-center gap-1 rounded-full px-1 text-petit font-semibold text-encre-2 transition-opacity active:opacity-60"
       >
         {tableau ? 'Masquer le tableau' : 'Voir le tableau'}
+        <ChevronDown size={16} strokeWidth={2.2} aria-hidden className={`transition-transform duration-200 ${tableau ? 'rotate-180' : ''}`} />
       </button>
       {tableau && (
-        <div className="mt-1 max-h-80 overflow-y-auto rounded-lg shadow-[inset_0_0_0_1px_var(--trait)]">
+        <div className="mt-1 max-h-80 overflow-y-auto rounded-xl bg-surface-2">
           <table className="w-full text-petit">
             <caption className="sr-only">{titre}</caption>
-            <thead className="sticky top-0 bg-surface-2 text-encre-2">
+            <thead className="sticky top-0 bg-surface-2 text-xs text-encre-2">
               <tr>
-                <th scope="col" className="px-3 py-1.5 text-left font-medium">
+                <th scope="col" className="px-3 py-2 text-left font-medium">
                   {nomColonne}
                 </th>
-                <th scope="col" className="px-2 py-1.5 text-right font-medium">
+                <th scope="col" className="px-2 py-2 text-right font-medium">
                   Objets
                 </th>
-                <th scope="col" className="px-2 py-1.5 text-right font-medium">
+                <th scope="col" className="px-2 py-2 text-right font-medium">
                   Valeur
                 </th>
-                <th scope="col" className="px-3 py-1.5 text-right font-medium">
+                <th scope="col" className="px-3 py-2 text-right font-medium">
                   Part
                 </th>
               </tr>
@@ -97,12 +100,12 @@ export function BarresClassees({
             <tbody>
               {triees.map((b) => (
                 <tr key={b.id} className="border-t border-trait">
-                  <td className="px-3 py-1.5">{b.nom}</td>
-                  <td className="chiffres px-2 py-1.5 text-right">{b.objets}</td>
-                  <td className="chiffres px-2 py-1.5 text-right whitespace-nowrap">
+                  <td className="px-3 py-2">{b.nom}</td>
+                  <td className="chiffres px-2 py-2 text-right">{b.objets}</td>
+                  <td className="chiffres px-2 py-2 text-right whitespace-nowrap">
                     <Montant valeur={b.valeur} />
                   </td>
-                  <td className="chiffres px-3 py-1.5 text-right text-encre-2">{fmtPart.format(b.valeur / total)}</td>
+                  <td className="chiffres px-3 py-2 text-right text-encre-2">{fmtPart.format(b.valeur / total)}</td>
                 </tr>
               ))}
             </tbody>

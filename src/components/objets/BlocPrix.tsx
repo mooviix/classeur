@@ -1,9 +1,9 @@
-// Bloc « Cote » d'une fiche : tendance Cardmarket en grand, variations, plus bas et moyennes, source écrite en clair.
+// Bloc « Cote Cardmarket » d'une fiche : la cote en grand (elle défile jusqu'à sa valeur), sa variation sur 30 jours,
+// le plus bas et les moyennes en 3 colonnes, la source écrite en clair.
 import type { ReactNode } from 'react';
 import type { Prix } from '../../data/catalogue';
-import { dateCourte, euros, variation } from '../../lib/format';
-import { Variation } from '../Variation';
-import { TitreSection } from '../fiche/Elements';
+import { dateCourte, euros, pourcent, sens, variation } from '../../lib/format';
+import { CoteQuiDefile } from '../fiche/CoteQuiDefile';
 
 interface Props {
   prix: Prix | null;
@@ -18,73 +18,80 @@ interface Props {
 export function BlocPrix({ prix, datePrix, sansCote, note }: Props) {
   // « 17 nov. » finit déjà par un point d'abréviation : pas de second point.
   const jour = dateCourte(datePrix);
-  const source = `Cardmarket, toutes langues confondues, prix du ${jour}${jour.endsWith('.') ? '' : '.'}`;
+  const source = `Toutes langues confondues, prix du ${jour}${jour.endsWith('.') ? '' : '.'}`;
 
   if (!prix) {
     return (
-      <section aria-label="Cote">
-        <TitreSection>Cote</TitreSection>
-        <div className="pochette px-4 py-4 text-petit text-encre-2">
-          {sansCote ?? 'Pas de cote Cardmarket pour cette version : elle n’y est pas référencée, ou personne ne la vend en ce moment.'}
-        </div>
-        {note && <p className="mt-2 text-micro text-encre-2">{note}</p>}
+      <section aria-label="Cote Cardmarket" className="bloc px-4 py-3.5">
+        <p className="text-petit text-encre-2">Cote Cardmarket</p>
+        <p className="semi-large mt-0.5 text-titre font-bold text-encre-3">Pas de cote</p>
+        <p className="mt-2 text-petit text-encre-2">
+          {sansCote ?? 'Cette version n’est pas référencée sur Cardmarket, ou personne ne la vend en ce moment.'}
+        </p>
+        {note && <p className="mt-2 text-[0.75rem] leading-4 text-encre-3">{note}</p>}
       </section>
     );
   }
 
   const reference = prix.tendance ?? prix.moy30 ?? prix.bas;
-  const nomReference = prix.tendance != null ? 'Tendance' : prix.moy30 != null ? 'Moyenne 30 jours (pas de tendance ce jour)' : 'Plus bas (pas de tendance ce jour)';
+  const precision = prix.tendance != null ? null : prix.moy30 != null ? 'Moyenne sur 30 jours : pas de tendance ce jour.' : 'Annonce la moins chère : pas de tendance ce jour.';
   const base = prix.tendance;
   // Au-delà de +1 000 %, c'est presque toujours un relevé faux (prix d'alors quasi nul) : on n'affiche rien.
   const fiable = (r: number | null) => (r != null && r > 10 ? null : r);
-  const variations: Array<[string, string, number | null]> = [
-    ['24 h', 'sur 24 heures', fiable(variation(prix.j1, base))],
-    ['7 j', 'sur 7 jours', fiable(variation(prix.j7, base))],
-    ['30 j', 'sur 30 jours', fiable(variation(prix.j30, base))],
+  // Une seule pastille : 30 jours de préférence (24 h, c'est surtout du bruit sur Cardmarket).
+  const candidats: Array<{ texte: string; lu: string; ratio: number | null }> = [
+    { texte: 'en 30 j', lu: 'sur 30 jours', ratio: fiable(variation(prix.j30, base)) },
+    { texte: 'en 7 j', lu: 'sur 7 jours', ratio: fiable(variation(prix.j7, base)) },
+    { texte: 'en 24 h', lu: 'sur 24 heures', ratio: fiable(variation(prix.j1, base)) },
   ];
+  const evolution = candidats.find((e): e is { texte: string; lu: string; ratio: number } => e.ratio != null);
+
+  // Une moyenne absente (fréquent pour les scellés) n'apporte rien : on n'affiche pas de colonne vide.
+  const colonnes = (
+    [
+      ['Plus bas', prix.bas],
+      ['Moy. 7 jours', prix.moy7],
+      ['Moy. 30 jours', prix.moy30],
+    ] as const
+  ).filter(([nom, valeur]) => valeur != null || nom === 'Plus bas');
 
   return (
-    <section aria-label="Cote">
-      <TitreSection>Cote</TitreSection>
-      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+    <section aria-label="Cote Cardmarket" className="bloc px-4 py-3.5">
+      <div className="flex items-end justify-between gap-3">
         <div className="min-w-0">
-          <p className="large text-montant font-extrabold tracking-tight">{euros(reference)}</p>
-          <p className="text-petit text-encre-2">{nomReference}</p>
+          <p className="text-petit text-encre-2">Cote Cardmarket</p>
+          <p className="mt-0.5 font-titre text-[2.125rem] leading-[1.05] font-bold tracking-[-0.02em]">
+            <CoteQuiDefile valeur={reference} />
+          </p>
         </div>
-        <ul className="flex gap-3 pb-0.5" aria-label="Variations de la tendance">
-          {variations.map(([court, long, ratio]) => (
-            <li key={court} className="flex flex-col items-center gap-0.5">
-              <span className="text-micro text-encre-2" aria-hidden>
-                {court}
-              </span>
-              <span className="sr-only">{long} :</span>
-              <Variation ratio={ratio} />
-            </li>
-          ))}
-        </ul>
+        {evolution && <PastilleVariation ratio={evolution.ratio} texte={evolution.texte} lu={evolution.lu} />}
       </div>
-      <dl className="mt-3 border-t border-trait text-petit">
-        {(
-          [
-            ['Plus bas', 'tous états', prix.bas],
-            ['Moyenne 7 jours', null, prix.moy7],
-            ['Moyenne 30 jours', null, prix.moy30],
-          ] as const
-        )
-          // Une moyenne absente (fréquent pour les scellés) n'apporte rien : on n'affiche pas de ligne vide.
-          .filter(([nom, , valeur]) => valeur != null || nom === 'Plus bas')
-          .map(([nom, precision, valeur]) => (
-          <div key={nom} className="flex min-h-11 items-center justify-between gap-4 border-b border-trait py-2">
-            <dt className="text-encre-2">
-              {nom}
-              {precision && <span className="text-encre-3"> ({precision})</span>}
-            </dt>
-            <dd className="chiffres font-semibold">{euros(valeur)}</dd>
+      {precision && <p className="mt-1 text-[0.75rem] leading-4 text-encre-2">{precision}</p>}
+      <dl
+        className="mt-3 grid gap-2 border-t border-grille pt-3"
+        style={{ gridTemplateColumns: `repeat(${colonnes.length}, minmax(0, 1fr))` }}
+      >
+        {colonnes.map(([nom, valeur]) => (
+          <div key={nom} className="min-w-0">
+            <dt className="truncate text-[0.75rem] leading-4 text-encre-2">{nom}</dt>
+            <dd className="chiffres mt-0.5 truncate text-corps font-semibold">{euros(valeur)}</dd>
           </div>
         ))}
       </dl>
-      <p className="mt-2 text-micro text-encre-2">{source}</p>
-      {note && <p className="mt-1 text-micro text-encre-2">{note}</p>}
+      <p className="mt-2.5 text-[0.75rem] leading-4 text-encre-3">{source}</p>
+      {note && <p className="mt-1 text-[0.75rem] leading-4 text-encre-3">{note}</p>}
     </section>
+  );
+}
+
+/** « −1,3 % en 30 j » : pastille verte ou rouge, toujours avec le signe. */
+function PastilleVariation({ ratio, texte, lu }: { ratio: number; texte: string; lu: string }) {
+  const s = sens(ratio);
+  const couleurs = s === 'hausse' ? 'bg-hausse-doux text-hausse' : s === 'baisse' ? 'bg-baisse-doux text-baisse' : 'bg-surface-2 text-encre-2';
+  return (
+    <p className={`chiffres mb-1 shrink-0 rounded-full px-2.5 py-0.5 text-petit font-semibold whitespace-nowrap ${couleurs}`}>
+      <span className="sr-only">{`Évolution de la tendance ${lu} : ${pourcent(ratio)}`}</span>
+      <span aria-hidden>{`${pourcent(ratio)} ${texte}`}</span>
+    </p>
   );
 }

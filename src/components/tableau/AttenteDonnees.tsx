@@ -10,9 +10,9 @@ export function AttenteDonnees({ etat }: { etat: EtatDonnees }) {
 
   if (etat.statut === 'chargement') {
     return (
-      <div role="status" className="pochette my-6 flex flex-col items-center gap-3 px-6 py-10 text-center">
-        <LoaderCircle size={26} className="animate-spin text-dos" aria-hidden />
-        <p className="font-semibold">Chargement des prix</p>
+      <div role="status" className="bloc mt-3 flex flex-col items-center gap-3 px-6 py-10 text-center">
+        <LoaderCircle size={26} className="animate-spin text-encre-2" aria-hidden />
+        <p className="font-titre text-[1.125rem] font-bold">Chargement des prix</p>
         <p className="text-petit text-encre-2">Le catalogue arrive sur ce téléphone ; ensuite il reste disponible hors ligne.</p>
       </div>
     );
@@ -29,8 +29,8 @@ export function AttenteDonnees({ etat }: { etat: EtatDonnees }) {
     }
   };
   return (
-    <div role="alert" className="pochette my-6 flex flex-col items-center gap-2 px-6 py-8 text-center">
-      <p className="font-semibold">Les prix n’ont pas pu être chargés</p>
+    <div role="alert" className="bloc mt-3 flex flex-col items-center gap-2 px-6 py-8 text-center">
+      <p className="font-titre text-[1.125rem] font-bold">Les prix n’ont pas pu être chargés</p>
       <p className="text-petit text-encre-2">
         {technique ? 'Le catalogue des prix est introuvable pour le moment. Réessaie dans un instant.' : etat.message}
       </p>

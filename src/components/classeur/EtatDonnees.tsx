@@ -48,26 +48,27 @@ function ErreurDonnees({ message }: { message: string }) {
 
 export function Chargement({ forme = 'grille', texte = 'Chargement du catalogue…' }: { forme?: 'grille' | 'liste'; texte?: string }) {
   return (
-    <div role="status" aria-live="polite" className="pt-2">
-      <p className="mb-3 text-petit text-encre-2">{texte}</p>
+    <div role="status" aria-live="polite" className="pt-3">
+      <p className="mb-3 px-1 text-petit text-encre-2">{texte}</p>
       {forme === 'grille' ? (
-        <div aria-hidden className="grid animate-pulse grid-cols-3 gap-x-2 gap-y-3">
+        <div aria-hidden className="grid animate-pulse grid-cols-3 gap-x-2.5 gap-y-4">
           {Array.from({ length: 9 }, (_, i) => (
             <div key={i}>
-              <div className="pochette format-carte coins-carte" />
-              <div className="mt-1.5 h-3 w-3/4 rounded bg-trait/70" />
-              <div className="mt-1 h-2.5 w-1/2 rounded bg-trait/50" />
+              <div className="format-carte coins-carte border-[1.5px] border-dashed border-trait bg-surface-2" />
+              <div className="mt-2 h-3 w-3/4 rounded-full bg-trait/70" />
+              <div className="mt-1.5 h-2.5 w-1/2 rounded-full bg-trait/50" />
             </div>
           ))}
         </div>
       ) : (
-        <ul aria-hidden className="animate-pulse">
+        <ul aria-hidden className="bloc -mx-1 animate-pulse px-4">
           {Array.from({ length: 7 }, (_, i) => (
-            <li key={i} className="flex items-center gap-3 border-b border-trait py-3">
-              <div className="pochette h-11 w-16 shrink-0" />
+            <li key={i} className="flex items-center gap-3.5 border-t border-trait py-3.5 first:border-t-0">
+              <div className="h-11 w-[4.5rem] shrink-0 rounded-xl bg-surface-2" />
               <div className="min-w-0 flex-1">
-                <div className="h-3.5 w-2/3 rounded bg-trait/70" />
-                <div className="mt-2 h-2.5 w-1/3 rounded bg-trait/50" />
+                <div className="h-3.5 w-2/3 rounded-full bg-trait/70" />
+                <div className="mt-2 h-2.5 w-1/3 rounded-full bg-trait/50" />
+                <div className="mt-2.5 h-1 w-full rounded-full bg-grille" />
               </div>
             </li>
           ))}

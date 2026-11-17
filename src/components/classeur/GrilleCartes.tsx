@@ -19,15 +19,19 @@ export function useRenduManquantes() {
   return usePreference<RenduManquantes>('cartes-manquantes', 'vide', ['vide', 'transparente']);
 }
 
+// Plus d'air entre les rangées qu'entre les colonnes : le nom et la cote se lisent sous chaque carte.
 const GRILLES: Record<Colonnes, string> = {
-  2: 'grid-cols-2 gap-x-3 gap-y-4',
-  3: 'grid-cols-3 gap-x-2 gap-y-3',
-  4: 'grid-cols-4 gap-x-1.5 gap-y-2.5',
+  2: 'grid-cols-2 gap-x-3.5 gap-y-5',
+  3: 'grid-cols-3 gap-x-2.5 gap-y-4',
+  4: 'grid-cols-4 gap-x-2 gap-y-3',
 };
 
-/** Page de classeur : grille de pochettes. */
+/**
+ * Page de classeur : grille de pochettes. Les 12 premières apparaissent en cascade (opacité et transform seulement).
+ * Pour rejouer la cascade à un changement de filtre, donner une `key` à la grille.
+ */
 export function Grille({ colonnes, children }: { colonnes: Colonnes; children: ReactNode }) {
-  return <ul className={`grid ${GRILLES[colonnes]}`}>{children}</ul>;
+  return <ul className={`cascade grid ${GRILLES[colonnes]}`}>{children}</ul>;
 }
 
 /** Actions d'une grille, stables d'un rendu à l'autre (les pochettes ne se redessinent que si leur carte change). */
@@ -88,8 +92,9 @@ export const PochetteCarte = memo(function PochetteCarte({
   actions: ActionsCarte;
 }) {
   const { plus, moins, appuiLong } = actions;
+  // carte qui manque au classeur : son nom passe en gris, comme la pochette vide
   return (
-    <li className="min-w-0">
+    <li className={`min-w-0 ${quantite === 0 && manquante ? 'text-encre-3' : ''}`}>
       <TuileCarte
         carte={carte}
         quantite={quantite}

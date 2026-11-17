@@ -1,5 +1,5 @@
 import { Check, ChevronDown, Search, X } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Link } from 'wouter';
 import { nombre } from '../../lib/format';
 
@@ -17,7 +17,7 @@ export function ChampFiltre({
 }) {
   return (
     <div className="relative flex items-center">
-      <Search size={18} aria-hidden className="pointer-events-none absolute left-3 text-encre-2" />
+      <Search size={18} aria-hidden className="pointer-events-none absolute left-3.5 text-encre-3" />
       <input
         type="search"
         value={valeur}
@@ -29,7 +29,7 @@ export function ChampFiltre({
         autoCorrect="off"
         autoCapitalize="off"
         spellCheck={false}
-        className="h-11 w-full rounded-xl bg-surface pr-11 pl-10 text-encre shadow-[inset_0_0_0_1px_var(--trait)] placeholder:text-encre-3 [&::-webkit-search-cancel-button]:appearance-none"
+        className="h-11 w-full rounded-full bg-surface pr-11 pl-10 text-encre shadow-[inset_0_0_0_1px_var(--trait)] placeholder:text-encre-3 [&::-webkit-search-cancel-button]:appearance-none"
       />
       {valeur && (
         <button
@@ -52,59 +52,46 @@ export interface OptionPuce<T extends string> {
   compte?: number;
 }
 
-/** Puces de filtre à choix unique, défilables à l'horizontale (Toutes, Loose, Gradées, Doublons…). */
+/**
+ * Pilules de filtre à choix unique, défilables à l'horizontale (Toutes, Possédées, Doublons…).
+ * La pilule active est graphite. Chaque bouton fait 44 px de haut pour le doigt, la pilule visible 34 px.
+ * `className` règle les marges du ruban (par défaut il déborde jusqu'aux bords de l'écran).
+ */
 export function Puces<T extends string>({
   options,
   valeur,
   onChange,
   label,
+  className = '-mx-4 px-4',
 }: {
   options: ReadonlyArray<OptionPuce<T>>;
   valeur: T;
   onChange: (v: T) => void;
   label: string;
+  className?: string;
 }) {
-  return (
-    <div role="radiogroup" aria-label={label} className="sans-barre -mx-4 flex gap-1.5 overflow-x-auto px-4 py-0.5">
-      {options.map((o) => {
-        const actif = o.id === valeur;
-        return (
-          <button
-            key={o.id}
-            type="button"
-            role="radio"
-            aria-checked={actif}
-            onClick={() => onChange(o.id)}
-            className={`flex h-11 shrink-0 items-center gap-1 rounded-full px-3 text-petit font-semibold transition-colors ${
-              actif ? 'bg-dos text-sur-dos' : 'bg-surface-2 text-encre-2 shadow-[inset_0_0_0_1px_var(--trait)] active:bg-trait/60'
-            }`}
-          >
-            {o.nom}
-            {o.compte != null && <span className={`chiffres font-medium ${actif ? 'opacity-80' : 'text-encre-3'}`}>{o.compte}</span>}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+  const ruban = useRef<HTMLDivElement>(null);
+  const precedente = useRef<T | null>(null);
+  // les compteurs arrivent après le premier rendu et élargissent les pilules : on revérifie à ce moment-là
+  const largeurs = options.map((o) => `${o.nom}${o.compte ?? ''}`).join('|');
+  // La pilule active reste visible dans le ruban (au retour sur l'écran comme après un choix), sans faire défiler la page.
+  useEffect(() => {
+    const r = ruban.current;
+    const actif = r?.querySelector<HTMLElement>('[aria-checked="true"]');
+    // défilement doux seulement quand on vient de toucher une autre pilule
+    const choix = precedente.current != null && precedente.current !== valeur;
+    precedente.current = valeur;
+    if (!r || !actif || r.scrollWidth <= r.clientWidth) return;
+    const style = getComputedStyle(r);
+    const gauche = actif.offsetLeft - parseFloat(style.paddingLeft);
+    const droite = actif.offsetLeft + actif.offsetWidth + parseFloat(style.paddingRight) - r.clientWidth;
+    const cible = r.scrollLeft > gauche ? gauche : r.scrollLeft < droite ? droite : null;
+    const doux = choix && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (cible != null) r.scrollTo({ left: cible, behavior: doux ? 'smooth' : 'auto' });
+  }, [valeur, largeurs]);
 
-/**
- * Onglets d'une grille (Toutes, Possédées, Manquantes, Doublons) : l'allure de Segments, en plus serré,
- * avec le nombre de cartes sous chaque libellé.
- */
-export function Onglets<T extends string>({
-  options,
-  valeur,
-  onChange,
-  label,
-}: {
-  options: ReadonlyArray<OptionPuce<T>>;
-  valeur: T;
-  onChange: (v: T) => void;
-  label: string;
-}) {
   return (
-    <div role="radiogroup" aria-label={label} className="flex rounded-xl bg-surface-2 p-1 shadow-[inset_0_0_0_1px_var(--trait)]">
+    <div ref={ruban} role="radiogroup" aria-label={label} className={`sans-barre relative flex gap-1.5 overflow-x-auto ${className}`}>
       {options.map((o) => {
         const actif = o.id === valeur;
         return (
@@ -114,12 +101,17 @@ export function Onglets<T extends string>({
             role="radio"
             aria-checked={actif}
             onClick={() => onChange(o.id)}
-            className={`flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center rounded-lg px-1 transition-colors ${
-              actif ? 'bg-surface text-encre shadow-[0_1px_3px_rgb(0_0_0/0.12)]' : 'text-encre-2'
-            }`}
+            className="group appui shrink-0 py-[5px] focus-visible:outline-none"
           >
-            <span className="max-w-full truncate text-petit leading-tight font-semibold">{o.nom}</span>
-            {o.compte != null && <span className="chiffres text-micro leading-tight">{nombre(o.compte)}</span>}
+            <span
+              className={`flex h-[34px] items-center gap-1 rounded-full px-3 text-petit font-semibold whitespace-nowrap group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-encre ${
+                actif ? 'bg-encre text-pochette' : 'bg-surface text-encre shadow-[inset_0_0_0_1px_var(--trait)] group-active:bg-surface-2'
+              }`}
+            >
+              {/* l'espace sépare le nom du nombre pour les lecteurs d'écran (« Toutes 207 ») */}
+              {o.nom}{' '}
+              {o.compte != null && <span className={`chiffres ${actif ? 'opacity-60' : 'text-encre-3'}`}>{nombre(o.compte)}</span>}
+            </span>
           </button>
         );
       })}
@@ -133,12 +125,12 @@ export function BoutonChoix({ libelle, valeur, onClick, icone }: { libelle: stri
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-11 min-w-0 items-center gap-1.5 rounded-xl px-2 text-petit active:bg-surface-2"
+      className="appui flex min-h-11 min-w-0 items-center gap-1.5 rounded-full px-3 text-petit active:bg-surface"
     >
       {icone}
       <span className="shrink-0 text-encre-2">{libelle}</span>
-      <span className="truncate font-semibold text-dos">{valeur}</span>
-      <ChevronDown size={16} aria-hidden className="shrink-0 text-dos" />
+      <span className="truncate font-semibold text-encre">{valeur}</span>
+      <ChevronDown size={16} aria-hidden className="shrink-0 text-encre-2" />
     </button>
   );
 }
@@ -177,10 +169,14 @@ export function ListeChoix<T extends string>({
             >
               {o.icone}
               <span className="min-w-0 flex-1">
-                <span className={`block truncate ${actif ? 'font-bold text-dos' : 'font-semibold'}`}>{o.nom}</span>
+                <span className={`block truncate ${actif ? 'font-bold text-encre' : 'font-semibold'}`}>{o.nom}</span>
                 {o.detail && <span className="block truncate text-petit text-encre-2">{o.detail}</span>}
               </span>
-              {actif && <Check size={20} strokeWidth={2.6} aria-hidden className="shrink-0 text-dos" />}
+              {actif && (
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-encre text-pochette">
+                  <Check size={15} strokeWidth={3} aria-hidden />
+                </span>
+              )}
             </button>
           </li>
         );
@@ -191,12 +187,11 @@ export function ListeChoix<T extends string>({
 
 const STYLES_LIEN = {
   principal: 'bg-dos text-sur-dos active:brightness-95',
-  secondaire: 'bg-surface-2 text-encre shadow-[inset_0_0_0_1px_var(--trait)] active:bg-trait/60',
-  // le jaune de la bordure des cartes : réservé au scan
+  secondaire: 'border border-trait bg-surface text-encre active:bg-surface-2',
   scan: 'bg-dos text-sur-dos active:brightness-95',
 } as const;
 
-/** Lien qui a l'air d'un bouton (navigation vers le scanner, la recherche…). */
+/** Lien qui a l'air d'un bouton (navigation vers le scanner, la recherche…), même allure que Bouton. */
 export function LienBouton({
   href,
   genre = 'principal',
@@ -213,7 +208,7 @@ export function LienBouton({
   return (
     <Link
       href={href}
-      className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 font-semibold ${STYLES_LIEN[genre]} ${plein ? 'w-full' : ''}`}
+      className={`appui inline-flex min-h-12 items-center justify-center gap-2 rounded-[14px] px-4 font-semibold ${STYLES_LIEN[genre]} ${plein ? 'w-full' : ''}`}
     >
       {icone}
       {children}

@@ -3,12 +3,12 @@
 // Parcours : gabarit 63 × 88 → photo fixe → détection + empreintes + recherche (≈ 0,1 à 0,3 s) → 3 à 5 propositions,
 // ou ajout direct en mode « ajout rapide » quand la 1re est nettement devant → feuille d'ajout.
 import { Flashlight, FlashlightOff, ImageIcon, LoaderCircle, RotateCcw, Search, X, Zap } from 'lucide-react';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ChangeEvent, type ReactNode, type RefObject } from 'react';
 import { useLocation } from 'wouter';
 import { Bouton } from '../components/Bouton';
-import { Feuille } from '../components/Feuille';
 import { Visuel } from '../components/Visuel';
 import { annoncer } from '../components/fiche/annonce';
+import { CoteQuiDefile } from '../components/fiche/CoteQuiDefile';
 import { DejaPossede } from '../components/fiche/Elements';
 import { numeroCarte } from '../components/fiche/outils';
 import { FeuilleAjout } from '../components/objets/FeuilleAjout';
@@ -68,8 +68,6 @@ interface Banniere {
 }
 
 // ---------- Outils ----------
-
-const mouvementReduit = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function coteCarte(d: Donnees, c: Carte): number | null {
   const p = prixCarte(d, c);
@@ -455,9 +453,14 @@ export function Scanner() {
   } else if (occupe) message = 'Je cherche…';
 
   const voirGabarit = !photo && camera.statut !== 'erreur';
+  const resultats = phase.nom === 'propositions' || phase.nom === 'inconnue';
 
   return (
-    <section ref={racine} aria-label="Scanner de cartes" className="fixed inset-0 overflow-hidden bg-black text-white select-none">
+    <section
+      ref={racine}
+      aria-label="Scanner de cartes"
+      className="fixed inset-0 overflow-hidden bg-[radial-gradient(120%_70%_at_50%_30%,#2b2e35_0%,#121317_60%,#0b0c0f_100%)] text-white select-none"
+    >
       <video
         ref={videoRef}
         playsInline
@@ -466,11 +469,12 @@ export function Scanner() {
         aria-hidden
         className={`absolute inset-0 size-full object-cover ${camera.statut === 'active' ? '' : 'opacity-0'}`}
       />
-      {photo && <img src={photo} alt="Photo choisie" className="absolute inset-0 size-full bg-black object-contain" />}
+      {photo && <img src={photo} alt="Photo choisie" className="absolute inset-0 size-full object-contain" />}
 
       {/* Zone libre entre les deux barres : gabarit (ou panneau d'erreur de la caméra) */}
       <div
         ref={zone}
+        inert={resultats}
         className="absolute inset-x-0 top-[calc(4rem+env(safe-area-inset-top))] bottom-[calc(8.75rem+env(safe-area-inset-bottom))] flex flex-col items-center justify-center px-4"
       >
         {camera.statut === 'erreur' && !photo ? (
@@ -480,21 +484,18 @@ export function Scanner() {
             <div
               ref={gabaritRef}
               style={{ width: taille.largeur, height: taille.hauteur }}
-              className={`relative shrink-0 rounded-[4.7%/3.4%] ${voirGabarit ? 'shadow-[0_0_0_100vmax_rgb(0_0_0/0.5)]' : 'invisible'}`}
+              className={`relative shrink-0 rounded-[4.7%/3.4%] ${voirGabarit ? 'shadow-[0_0_0_100vmax_rgb(0_0_0/0.45)]' : 'invisible'}`}
             >
-              <div aria-hidden className="absolute inset-0 rounded-[inherit] ring-1 ring-white/40" />
-              {COINS.map((c) => (
-                <div key={c} aria-hidden className={`absolute aspect-square w-[17%] border-bordure ${c} ${occupe ? 'animate-pulse' : ''}`} />
-              ))}
+              <CoinsHolo largeur={taille.largeur} hauteur={taille.hauteur} anime={occupe} />
               {camera.statut === 'demarrage' && !photo && (
-                <p className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-4 text-center text-petit text-white/75">
+                <p className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-4 text-center text-petit text-white/80">
                   Ouverture de la caméra…
-                  <span className="text-micro text-white/55">Si le navigateur te le demande, autorise l’accès à la caméra.</span>
+                  <span className="text-micro text-white/60">Si le navigateur te le demande, autorise l’accès à la caméra.</span>
                 </p>
               )}
             </div>
-            <div role="status" aria-live="polite" className="mt-4 flex max-w-xs flex-col items-center gap-2 text-center">
-              <p className={`text-petit ${occupe ? 'font-semibold text-white' : 'text-white/85'}`}>{message}</p>
+            <div role="status" aria-live="polite" className="mt-3.5 flex max-w-xs flex-col items-center gap-2 text-center">
+              <p className={`rounded-[1.125rem] bg-white/10 px-3 py-1.5 text-petit ${occupe ? 'font-semibold text-white' : 'text-white/82'}`}>{message}</p>
               {action}
             </div>
           </>
@@ -506,19 +507,19 @@ export function Scanner() {
         <div
           key={banniere.cle}
           role="status"
-          className="absolute inset-x-3 top-[calc(4.25rem+env(safe-area-inset-top))] z-20 mx-auto flex max-w-md items-center gap-3 rounded-2xl bg-surface p-2 text-encre shadow-[0_12px_32px_-12px_rgb(0_0_0/0.7)]"
+          className="absolute inset-x-3 top-[calc(4.25rem+env(safe-area-inset-top))] z-20 mx-auto flex max-w-md items-center gap-3 rounded-[1.25rem] bg-surface p-2.5 text-encre shadow-[0_16px_40px_-12px_rgb(0_0_0/0.7)] [animation:apparait_0.32s_var(--ease-douce)]"
         >
           <Visuel src={imageCarte(banniere.carte)} alt="" className="w-11 shrink-0" repli={banniere.carte.num} />
           <div className="min-w-0 flex-1">
             <p className="truncate font-semibold">{banniere.carte.nom}</p>
             <p className="truncate text-petit text-encre-2">
-              Ajoutée · <CoteQuiDefile valeur={banniere.prix} className="font-semibold text-encre" />
+              Ajoutée, cote <CoteQuiDefile valeur={banniere.prix} duree={dureeSuspense(banniere.prix)} vide="inconnue" className="font-semibold text-encre" />
             </p>
           </div>
           <button
             type="button"
             onClick={() => void annulerBanniere()}
-            className="min-h-11 shrink-0 rounded-lg px-3 font-bold text-dos underline underline-offset-2 active:opacity-70"
+            className="appui min-h-10 shrink-0 rounded-full border border-trait px-3.5 text-petit font-semibold active:bg-surface-2"
           >
             Annuler
           </button>
@@ -526,13 +527,13 @@ export function Scanner() {
       )}
 
       {/* Barre du haut */}
-      <div className="pt-sur absolute inset-x-0 top-0 z-10 bg-linear-to-b from-black/65 to-black/0">
-        <div className="flex h-16 items-center justify-between gap-2 px-3">
+      <div className="pt-sur absolute inset-x-0 top-0 z-10 bg-linear-to-b from-black/55 to-black/0">
+        <div className="flex h-16 items-center justify-between gap-2 px-4">
           <BoutonRond label="Fermer le scanner" onClick={fermer}>
-            <X size={24} aria-hidden />
+            <X size={20} strokeWidth={2.2} aria-hidden />
           </BoutonRond>
           {session.ajoutees > 0 ? (
-            <p className="chiffres rounded-full bg-white/15 px-3 py-1.5 text-petit font-semibold backdrop-blur-sm">
+            <p className="chiffres rounded-full bg-white/12 px-3 py-[0.4375rem] text-petit font-semibold backdrop-blur-sm">
               {pluriel(session.ajoutees, 'carte ajoutée', 'cartes ajoutées')}
             </p>
           ) : (
@@ -540,7 +541,7 @@ export function Scanner() {
           )}
           {camera.statut === 'active' && camera.camera.lampe ? (
             <BoutonRond label={lampe ? 'Éteindre la lampe' : 'Allumer la lampe'} actif={lampe} onClick={() => void basculerLampe()}>
-              {lampe ? <Flashlight size={22} aria-hidden /> : <FlashlightOff size={22} aria-hidden />}
+              {lampe ? <Flashlight size={20} aria-hidden /> : <FlashlightOff size={20} aria-hidden />}
             </BoutonRond>
           ) : (
             <span className="size-11" />
@@ -549,34 +550,34 @@ export function Scanner() {
       </div>
 
       {/* Barre du bas : déclencheur au pouce */}
-      <div className="pb-sur absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/75 to-black/0">
-        <div className="mx-auto grid max-w-md grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 pt-5 pb-5">
+      <div inert={resultats} className="pb-sur absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/70 to-black/0">
+        <div className="mx-auto grid max-w-md grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 pt-6 pb-5">
           <BoutonBas label="Choisir une photo" onClick={() => fichierRef.current?.click()} disabled={occupe}>
-            <ImageIcon size={22} aria-hidden />
+            <ImageIcon size={21} aria-hidden />
           </BoutonBas>
           <button
             type="button"
             aria-label={occupe ? 'Analyse en cours' : 'Prendre la photo'}
             disabled={!pret || occupe || camera.statut !== 'active'}
             onClick={() => void declencher()}
-            className="group flex size-20 items-center justify-center rounded-full border-4 border-white/90 transition-opacity disabled:opacity-45"
+            className="group flex size-[4.75rem] items-center justify-center rounded-full border-4 border-white/90 transition-opacity disabled:opacity-45"
           >
             {occupe ? (
-              <LoaderCircle size={34} className="animate-spin text-white" aria-hidden />
+              <LoaderCircle size={32} className="animate-spin text-white" aria-hidden />
             ) : (
-              <span className="size-15 rounded-full bg-white transition-transform duration-100 group-active:scale-90" />
+              <span className="size-[3.65rem] rounded-full bg-white transition-transform duration-100 group-active:scale-90" />
             )}
           </button>
           <BoutonBas label="Ajout rapide" actif={reglages.ajoutRapide} onClick={basculerRapide} pressed={reglages.ajoutRapide}>
-            <Zap size={22} aria-hidden fill={reglages.ajoutRapide ? 'currentColor' : 'none'} />
+            <Zap size={21} aria-hidden fill={reglages.ajoutRapide ? 'currentColor' : 'none'} />
           </BoutonBas>
         </div>
       </div>
 
       <input ref={fichierRef} type="file" accept="image/*" className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => void surFichier(e)} />
 
-      {phase.nom === 'propositions' || phase.nom === 'inconnue' ? (
-        <FeuilleResultat
+      {resultats ? (
+        <PanneauResultat
           phase={phase}
           quantites={quantites}
           onChoisir={choisir}
@@ -597,12 +598,38 @@ export function Scanner() {
   );
 }
 
-const COINS = [
-  'left-0 top-0 border-l-[3px] border-t-[3px] rounded-tl-[14px]',
-  'right-0 top-0 border-r-[3px] border-t-[3px] rounded-tr-[14px]',
-  'right-0 bottom-0 border-r-[3px] border-b-[3px] rounded-br-[14px]',
-  'left-0 bottom-0 border-l-[3px] border-b-[3px] rounded-bl-[14px]',
-];
+/** Durée du défilement de la cote : plus la carte vaut cher, plus le suspense dure (0,6 à 1,3 s). */
+function dureeSuspense(valeur: number | null): number {
+  return 600 + Math.min(700, Math.log10(1 + Math.max(0, valeur ?? 0)) * 260);
+}
+
+/** Les quatre coins du gabarit, au trait holo (dégradé des cartes holographiques), qui pulsent pendant l'analyse. */
+function CoinsHolo({ largeur: w, hauteur: h, anime }: { largeur: number; hauteur: number; anime: boolean }) {
+  const id = `coins-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  if (!w || !h) return null;
+  const e = 2; // moitié de l'épaisseur du trait : il reste dans le gabarit
+  const r = Math.max(6, Math.round(w * 0.047)); // même arrondi que le gabarit (coins d'une carte)
+  const b = Math.round(w * 0.14); // longueur d'un bras
+  const d = [
+    `M${e} ${e + b}V${e + r}A${r} ${r} 0 0 1 ${e + r} ${e}H${e + b}`,
+    `M${w - e - b} ${e}H${w - e - r}A${r} ${r} 0 0 1 ${w - e} ${e + r}V${e + b}`,
+    `M${w - e} ${h - e - b}V${h - e - r}A${r} ${r} 0 0 1 ${w - e - r} ${h - e}H${w - e - b}`,
+    `M${e + b} ${h - e}H${e + r}A${r} ${r} 0 0 1 ${e} ${h - e - r}V${h - e - b}`,
+  ].join('');
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden className={`absolute inset-0 ${anime ? 'animate-pulse' : ''}`}>
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#6ec6f5" />
+          <stop offset="0.4" stopColor="#a08bf5" />
+          <stop offset="0.7" stopColor="#f08acb" />
+          <stop offset="1" stopColor="#f5c46a" />
+        </linearGradient>
+      </defs>
+      <path d={d} fill="none" stroke={`url(#${id})`} strokeWidth={4} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 // ---------- Petits composants ----------
 
@@ -614,8 +641,8 @@ function BoutonRond({ label, onClick, actif, children }: { label: string; onClic
       title={label}
       onClick={onClick}
       aria-pressed={actif}
-      className={`flex size-11 shrink-0 items-center justify-center rounded-full backdrop-blur-sm active:opacity-70 ${
-        actif ? 'bg-white text-[#15171C]' : 'bg-black/35 text-white'
+      className={`appui flex size-11 shrink-0 items-center justify-center rounded-full backdrop-blur-sm ${
+        actif ? 'bg-white text-[#15171c]' : 'bg-white/12 text-white active:bg-white/20'
       }`}
     >
       {children}
@@ -644,10 +671,12 @@ function BoutonBas({
       onClick={onClick}
       disabled={disabled}
       aria-pressed={pressed}
-      className="flex min-h-14 flex-col items-center justify-center gap-1 justify-self-center rounded-xl px-2 text-micro font-semibold active:opacity-70 disabled:opacity-45"
+      className="appui flex min-h-14 flex-col items-center justify-center gap-1.5 justify-self-center rounded-xl px-2 text-micro font-semibold text-white/85 disabled:opacity-45"
     >
       <span
-        className={`flex size-11 items-center justify-center rounded-full ${actif ? 'bg-white text-[#15171C]' : 'bg-white/15 text-white'}`}
+        className={`flex size-12 items-center justify-center rounded-full backdrop-blur-sm transition-colors ${
+          actif ? 'bg-white text-[#15171c]' : 'bg-white/12 text-white'
+        }`}
       >
         {children}
       </span>
@@ -658,36 +687,9 @@ function BoutonBas({
 
 function PetitBouton({ onClick, children }: { onClick: () => void; children: ReactNode }) {
   return (
-    <button type="button" onClick={onClick} className="min-h-11 rounded-xl bg-white/15 px-4 text-petit font-semibold active:bg-white/25">
+    <button type="button" onClick={onClick} className="appui min-h-10 rounded-full bg-white/15 px-4 text-petit font-semibold active:bg-white/25">
       {children}
     </button>
-  );
-}
-
-/** La cote défile de 0 jusqu'à sa valeur (fixe si l'utilisateur a réduit les animations). */
-function CoteQuiDefile({ valeur, className = '' }: { valeur: number | null; className?: string }) {
-  const [affiche, setAffiche] = useState(() => (valeur == null || mouvementReduit() ? valeur : 0));
-  useEffect(() => {
-    if (valeur == null || mouvementReduit()) {
-      setAffiche(valeur);
-      return;
-    }
-    let image = 0;
-    const debut = performance.now();
-    const duree = 600 + Math.min(700, Math.log10(1 + valeur) * 260);
-    const pas = (t: number) => {
-      const k = Math.min(1, (t - debut) / duree);
-      setAffiche(valeur * (1 - (1 - k) ** 3));
-      if (k < 1) image = requestAnimationFrame(pas);
-    };
-    image = requestAnimationFrame(pas);
-    return () => cancelAnimationFrame(image);
-  }, [valeur]);
-  return (
-    <span className={`chiffres ${className}`}>
-      <span aria-hidden>{valeur == null ? 'pas de cote' : euros(affiche)}</span>
-      <span className="sr-only">{valeur == null ? 'pas de cote' : euros(valeur)}</span>
-    </span>
   );
 }
 
@@ -738,8 +740,8 @@ function ErreurCameraPanneau({ erreur, onReessayer, onPhoto }: { erreur: ErreurC
   };
   const t = textes[erreur];
   return (
-    <div role="alert" className="max-h-full w-full max-w-sm overflow-y-auto rounded-feuille bg-surface p-5 text-encre">
-      <p className="semi-large text-titre font-bold">{t.titre}</p>
+    <div role="alert" className="max-h-full w-full max-w-sm overflow-y-auto rounded-[1.75rem] bg-surface p-5 text-encre">
+      <p className="font-titre text-titre leading-tight font-bold">{t.titre}</p>
       <p className="mt-2 text-petit text-encre-2">{t.texte}</p>
       <div className="mt-4 flex flex-col gap-2">
         {t.reessayer && (
@@ -762,7 +764,12 @@ const TITRES: Record<Confiance['niveau'], string> = {
   inconnue: 'Carte non reconnue',
 };
 
-function FeuilleResultat({
+/**
+ * Feuille blanche des résultats, posée sur la photo figée (pas de voile : on voit encore la carte scannée).
+ * La meilleure proposition est encadrée en graphite ; un tap sur une proposition ouvre l'ajout.
+ * « Aucune » (ou Échap) reprend la visée ; « Chercher à la main » ouvre la recherche.
+ */
+function PanneauResultat({
   phase,
   quantites,
   onChoisir,
@@ -778,97 +785,157 @@ function FeuilleResultat({
   const { analyse } = phase;
   const inconnue = phase.nom === 'inconnue';
   const [premiere, ...autres] = analyse.propositions;
+  const liste = inconnue ? analyse.propositions.slice(0, 3) : autres;
   const qte = (c: Carte) => quantites?.get(`carte:${c.id}`) ?? 0;
+  const titre = useRef<HTMLHeadingElement>(null);
+  const idTitre = useId();
+
+  // Le focus va au titre (lecteurs d'écran, clavier) ; Échap reprend la visée.
+  useEffect(() => {
+    titre.current?.focus({ preventScroll: true });
+  }, []);
+  useEffect(() => {
+    const echap = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onReprendre();
+    };
+    window.addEventListener('keydown', echap);
+    return () => window.removeEventListener('keydown', echap);
+  }, [onReprendre]);
+
   return (
-    <Feuille
-      ouverte
-      onFermer={onReprendre}
-      titre={inconnue ? TITRES.inconnue : TITRES[analyse.confiance.niveau]}
-      pied={
-        <div className="grid gap-1">
-          <Bouton genre="secondaire" plein icone={<RotateCcw size={18} aria-hidden />} onClick={onReprendre}>
-            Reprendre la photo
-          </Bouton>
-          <Bouton genre="discret" plein className="min-h-11" icone={<Search size={18} aria-hidden />} onClick={onChercher}>
-            {inconnue ? 'Chercher à la main' : 'Aucune ne correspond'}
-          </Bouton>
-        </div>
-      }
+    <section
+      role="dialog"
+      aria-labelledby={idTitre}
+      className="pb-sur absolute inset-x-0 bottom-0 z-30 mx-auto flex max-h-[min(82dvh,44rem)] max-w-xl flex-col rounded-t-[1.75rem] bg-surface text-encre shadow-[0_-16px_44px_rgb(0_0_0/0.4)] [animation:feuille-monte_0.34s_var(--ease-ressort)]"
     >
-      {inconnue ? (
-        <div className="flex gap-3">
-          {analyse.apercu && (
-            <img src={analyse.apercu} alt="La carte telle que l’app l’a vue" className="coins-carte w-20 shrink-0 self-start" />
-          )}
-          <div className="min-w-0 text-petit">
-            <p className="font-semibold">Je ne retrouve pas cette carte dans le catalogue.</p>
-            <ul className="mt-2 list-disc space-y-1 pl-4 text-encre-2">
-              <li>Pose-la à plat sur un fond uni, plutôt sombre.</li>
-              <li>Évite les reflets : lumière au-dessus, pas de flash, sors-la de sa pochette si elle brille.</li>
-              <li>Fais-lui remplir le cadre jaune.</li>
-            </ul>
-          </div>
-        </div>
-      ) : (
-        premiere && (
-          <>
-            {analyse.rapideRefuse && (
-              <p className="mb-2 text-petit text-encre-2">Ajout rapide : pas assez sûr pour l’ajouter tout seul, choisis la bonne carte.</p>
+      <span aria-hidden className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-trait" />
+      <div className="flex shrink-0 items-baseline justify-between gap-3 px-4 pt-3">
+        <h2 ref={titre} id={idTitre} tabIndex={-1} className="font-titre text-[1.3125rem] leading-tight font-bold outline-none">
+          {inconnue ? TITRES.inconnue : TITRES[analyse.confiance.niveau]}
+        </h2>
+        {!inconnue && analyse.propositions.length > 1 && (
+          <span className="chiffres shrink-0 text-petit text-encre-2">{analyse.propositions.length} propositions</span>
+        )}
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3">
+        {inconnue ? (
+          <div className="flex gap-3">
+            {analyse.apercu && (
+              <img src={analyse.apercu} alt="La carte telle que l’app l’a vue" className="coins-carte w-16 shrink-0 self-start shadow-[0_4px_12px_rgb(21_23_28/0.18)]" />
             )}
-            <button
-              type="button"
-              onClick={() => onChoisir(premiere.carte)}
-              className="flex w-full items-center gap-4 rounded-2xl bg-surface-2 p-3 text-left shadow-[inset_0_0_0_1px_var(--trait)] active:bg-trait/60"
-            >
-              <Visuel src={imageCarte(premiere.carte)} alt="" className="w-24 shrink-0" repli={premiere.carte.num} prioritaire />
-              <span className="min-w-0 flex-1">
-                <span className="semi-large block text-titre leading-tight font-bold">{premiere.carte.nom}</span>
-                <span className="mt-0.5 block text-petit text-encre-2">
-                  {premiere.carte.ext.nom}{' '}
-                  <span className="etroit chiffres whitespace-nowrap">{numeroCarte(premiere.carte.num, premiere.carte.ext.officiel)}</span>
-                </span>
-                <span className="large mt-2 block text-grand font-extrabold">
-                  <CoteQuiDefile valeur={premiere.prix} />
-                </span>
-                <span className="mt-1 block">
-                  <DejaPossede quantite={qte(premiere.carte)} />
-                </span>
-                <span className="mt-2 inline-flex min-h-9 items-center rounded-lg bg-dos px-3 text-petit font-semibold text-sur-dos">
-                  {qte(premiere.carte) > 0 ? 'Ajouter un exemplaire' : 'Ajouter cette carte'}
-                </span>
-              </span>
-            </button>
-          </>
-        )
-      )}
-      {(inconnue ? analyse.propositions.slice(0, 3) : autres).length > 0 && (
-        <>
-          <p className="mt-4 mb-1 text-petit font-semibold text-encre-2">{inconnue ? 'Peut-être :' : 'Sinon, c’est peut-être :'}</p>
-          <ul>
-            {(inconnue ? analyse.propositions.slice(0, 3) : autres).map((p) => (
-              <li key={p.carte.id}>
-                <button
-                  type="button"
-                  onClick={() => onChoisir(p.carte)}
-                  className="flex min-h-16 w-full items-center gap-3 border-b border-trait py-2 text-left active:bg-surface-2"
-                >
-                  <Visuel src={imageCarte(p.carte)} alt="" className="w-11 shrink-0" repli={p.carte.num} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold">{p.carte.nom}</span>
-                    <span className="block truncate text-petit text-encre-2">
-                      {p.carte.ext.nom} <span className="etroit chiffres">{numeroCarte(p.carte.num, p.carte.ext.officiel)}</span>
+            <div className="min-w-0 text-petit">
+              <p className="font-semibold">Je ne retrouve pas cette carte dans le catalogue.</p>
+              <ul className="mt-2 list-disc space-y-1 pl-4 text-encre-2">
+                <li>Pose-la à plat sur un fond uni, plutôt sombre.</li>
+                <li>Évite les reflets : lumière au-dessus, pas de flash, sors-la de sa pochette si elle brille.</li>
+                <li>Fais-lui remplir le cadre.</li>
+              </ul>
+            </div>
+          </div>
+        ) : (
+          premiere && (
+            <>
+              {analyse.rapideRefuse && (
+                <p className="mb-2.5 text-petit text-encre-2">Ajout rapide : pas assez sûr pour l’ajouter tout seul, choisis la bonne carte.</p>
+              )}
+              <button
+                type="button"
+                onClick={() => onChoisir(premiere.carte)}
+                aria-label={`${premiere.carte.nom}, ${premiere.carte.ext.nom} ${numeroCarte(premiere.carte.num, premiere.carte.ext.officiel)}`}
+                className="appui flex w-full items-center gap-3 rounded-[1.125rem] border-[1.5px] border-encre bg-surface-2 p-2.5 text-left"
+              >
+                <Visuel src={imageCarte(premiere.carte)} alt="" className="w-[3.25rem] shrink-0" repli={premiere.carte.num} prioritaire />
+                <span className="flex min-w-0 flex-1 flex-col items-start gap-[3px]">
+                  <span className="max-w-full truncate text-base font-semibold">{premiere.carte.nom}</span>
+                  <span className="flex max-w-full gap-2 text-petit text-encre-2">
+                    <span className="truncate">{premiere.carte.ext.nom}</span>
+                    <span className="chiffres shrink-0">{numeroCarte(premiere.carte.num, premiere.carte.ext.officiel)}</span>
+                  </span>
+                  {qte(premiere.carte) > 0 && (
+                    <span className="mt-0.5">
+                      <DejaPossede quantite={qte(premiere.carte)} />
                     </span>
-                  </span>
-                  <span className="shrink-0 text-right">
-                    <span className="chiffres block text-petit font-semibold">{euros(p.prix)}</span>
-                    {qte(p.carte) > 0 && <span className="chiffres block text-micro font-semibold text-dos">×{qte(p.carte)}</span>}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </Feuille>
+                  )}
+                </span>
+                <CoteQuiDefile
+                  valeur={premiere.prix}
+                  duree={dureeSuspense(premiere.prix)}
+                  className="shrink-0 font-titre text-[1.1875rem] font-bold"
+                />
+              </button>
+            </>
+          )
+        )}
+
+        {liste.length > 0 && (
+          <>
+            {inconnue && <p className="mt-4 mb-1 text-petit font-semibold text-encre-2">Peut-être :</p>}
+            <ul className={inconnue ? '' : 'mt-1.5'}>
+              {liste.map((p) => (
+                <li key={p.carte.id}>
+                  <button
+                    type="button"
+                    onClick={() => onChoisir(p.carte)}
+                    className="appui flex w-full items-center gap-3 rounded-2xl px-2.5 py-2 text-left active:bg-surface-2"
+                  >
+                    <Visuel src={imageCarte(p.carte)} alt="" className="w-10 shrink-0" repli={p.carte.num} />
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="truncate text-corps font-semibold">{p.carte.nom}</span>
+                      <span className="flex gap-2 text-petit text-encre-2">
+                        <span className="truncate">{p.carte.ext.nom}</span>
+                        <span className="chiffres shrink-0">{numeroCarte(p.carte.num, p.carte.ext.officiel)}</span>
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-right">
+                      <span className="chiffres block text-corps font-semibold">{euros(p.prix)}</span>
+                      {qte(p.carte) > 0 && <span className="chiffres block text-micro font-semibold text-hausse">Déjà ×{qte(p.carte)}</span>}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        {!inconnue && (
+          <button
+            type="button"
+            onClick={onChercher}
+            className="mx-auto mt-1 flex min-h-10 items-center gap-1.5 px-2 text-petit font-semibold text-encre-2 active:opacity-70"
+          >
+            <Search size={16} aria-hidden />
+            Chercher à la main
+          </button>
+        )}
+      </div>
+
+      <div className="shrink-0 px-4 pt-3 pb-4">
+        {inconnue ? (
+          <div className="grid gap-1">
+            <Bouton plein className="h-[3.125rem]" icone={<RotateCcw size={18} aria-hidden />} onClick={onReprendre}>
+              Reprendre la photo
+            </Bouton>
+            <Bouton genre="discret" plein className="min-h-11" icone={<Search size={18} aria-hidden />} onClick={onChercher}>
+              Chercher à la main
+            </Bouton>
+          </div>
+        ) : (
+          <div className="flex gap-2.5">
+            <Bouton genre="secondaire" className="h-[3.125rem] shrink-0" onClick={onReprendre}>
+              Aucune
+            </Bouton>
+            <Bouton
+              className="h-[3.125rem] min-w-0 flex-1 whitespace-nowrap"
+              aria-label={premiere && qte(premiere.carte) > 0 ? 'Ajouter un exemplaire' : 'Ajouter à ma collection'}
+              onClick={() => premiere && onChoisir(premiere.carte)}
+            >
+              {/* Sur un très petit écran, « Ajouter » seul tient sur une ligne */}
+              Ajouter<span className="max-[359px]:hidden">{premiere && qte(premiere.carte) > 0 ? ' un exemplaire' : ' à ma collection'}</span>
+            </Bouton>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

@@ -6,6 +6,7 @@ import { comparerNumeros, pluriel, regrouperCartes, type GroupeCarte } from '../
 import { BoutonChoix, LienBouton, ListeChoix, Puces, type OptionChoix } from '../components/classeur/Controles';
 import { useMemoireDefilement, useRenduProgressif } from '../components/classeur/defilement';
 import { AttenteDonnees, Chargement } from '../components/classeur/EtatDonnees';
+import { Eventail } from '../components/classeur/Eventail';
 import {
   ajouterUnExemplaire,
   Grille,
@@ -253,6 +254,7 @@ export function Collection() {
             label="Filtrer les cartes"
             valeur={filtre}
             onChange={setFiltre}
+            className="-mx-4 mt-[7px] px-3"
             options={[
               { id: 'toutes', nom: 'Toutes', compte: comptes.toutes },
               { id: 'loose', nom: 'Loose', compte: comptes.loose },
@@ -262,7 +264,7 @@ export function Collection() {
           />
         )}
         {(segment === 'cartes' ? nbCartes : nbScelles) > 0 && (
-          <div className="-mx-2 mt-1 mb-2 flex items-center justify-between gap-1">
+          <div className={`-mx-3 mb-2 flex items-center justify-between gap-1 ${segment === 'cartes' ? '' : 'mt-2'}`}>
             <BoutonChoix
               libelle="Trier par"
               valeur={tri?.court ?? ''}
@@ -303,7 +305,8 @@ export function Collection() {
         ) : scelles.length === 0 ? (
           <VideFiltre segment="scelles" filtre={filtre} ext={extActive} onToutAfficher={toutAfficher} />
         ) : (
-          <ul className="divide-y divide-trait pb-4">
+          // clé = extension + tri : les premières lignes reviennent en cascade quand on change de vue
+          <ul key={`${extId ?? ''}|${triScelles}`} className="bloc cascade -mx-1 mb-6 px-4">
             {scelles.map((g) => (
               <LigneScelleCollection key={g.scelle.ref} groupe={g} />
             ))}
@@ -366,6 +369,9 @@ export function Collection() {
   );
 }
 
+/** Grand montant d'un bloc résumé (Bricolage, monte jusqu'à sa valeur). */
+const GRAND_MONTANT = 'font-titre chiffres mt-0.5 block truncate text-[2.125rem] leading-[1.1] font-bold tracking-[-0.025em]';
+
 function ResumeCartes({ groupes, filtre }: { groupes: GroupeCarte[]; filtre: boolean }) {
   let quantite = 0;
   let valeur = 0;
@@ -375,17 +381,30 @@ function ResumeCartes({ groupes, filtre }: { groupes: GroupeCarte[]; filtre: boo
     valeur += g.valeur ?? 0;
     if (g.valeur == null) sansCote += g.quantite;
   }
+  // Les trois cartes les plus chères de la sélection, en éventail : la couleur du bloc vient d'elles.
+  const top = useMemo(
+    () =>
+      groupes
+        .filter((g) => g.valeur != null && g.carte.image)
+        .sort((a, b) => (b.valeur ?? 0) - (a.valeur ?? 0))
+        .slice(0, 3)
+        .map((g) => g.carte),
+    [groupes],
+  );
   return (
-    <section aria-label="Résumé" className="pt-1 pb-3">
-      <p className="text-petit text-encre-2">{filtre ? 'Valeur de ces cartes' : 'Valeur de tes cartes'}</p>
-      <Montant valeur={valeur} className="large chiffres block text-grand font-extrabold tracking-tight" />
-      <p className="mt-0.5 flex flex-wrap gap-x-2 text-petit text-encre-2">
-        <span>
-          {pluriel(quantite, 'carte')}
-          {quantite > groupes.length && `, dont ${pluriel(groupes.length, 'différente')}`}
-        </span>
-        {sansCote > 0 && <span className="text-encre-3">{sansCote > 1 ? `${sansCote} sans cote` : '1 sans cote'}</span>}
-      </p>
+    <section aria-label="Résumé" className="bloc -mx-1 mt-1 flex items-center gap-3 p-4">
+      <div className="min-w-0 flex-1">
+        <p className="text-petit text-encre-2">{filtre ? 'Valeur de ces cartes' : 'Valeur de tes cartes'}</p>
+        <Montant valeur={valeur} anime className={GRAND_MONTANT} />
+        <p className="mt-1 flex flex-wrap gap-x-2 text-petit text-encre-2">
+          <span>
+            {pluriel(quantite, 'carte')}
+            {quantite > groupes.length && `, dont ${pluriel(groupes.length, 'différente')}`}
+          </span>
+          {sansCote > 0 && <span className="text-encre-3">{sansCote > 1 ? `${sansCote} sans cote` : '1 sans cote'}</span>}
+        </p>
+      </div>
+      <Eventail cartes={top} />
     </section>
   );
 }
@@ -403,22 +422,34 @@ function ResumeScelles({ groupes, filtre }: { groupes: GroupeScelle[]; filtre: b
   }
   const s = sens(gain);
   return (
-    <section aria-label="Résumé" className="pt-1 pb-3">
+    <section aria-label="Résumé" className="bloc -mx-1 mt-1 p-4">
       <p className="text-petit text-encre-2">{filtre ? 'Valeur de ces scellés' : 'Valeur de tes scellés'}</p>
-      <Montant valeur={valeur} className="large chiffres block text-grand font-extrabold tracking-tight" />
-      <p className="mt-0.5 text-petit text-encre-2">
+      <Montant valeur={valeur} anime className={GRAND_MONTANT} />
+      <p className="mt-1 text-petit text-encre-2">
         {pluriel(quantite, 'scellé')}
         {quantite > groupes.length && `, ${pluriel(groupes.length, 'produit différent', 'produits différents')}`}
       </p>
-      <dl className="mt-3 grid grid-cols-2 border-y border-trait text-petit">
-        <div className="py-2 pr-3">
-          <dt className="text-encre-2">Payé</dt>
-          <dd className="chiffres font-semibold">{paye == null ? 'prix d’achat non saisi' : <Montant valeur={paye} />}</dd>
+      <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-trait pt-3">
+        <div className="min-w-0">
+          <dt className="text-xs text-encre-2">Payé</dt>
+          <dd className="chiffres mt-0.5 truncate text-corps font-semibold">
+            {paye == null ? <span className="text-petit font-normal text-encre-3">prix d’achat non saisi</span> : <Montant valeur={paye} />}
+          </dd>
         </div>
-        <div className="border-l border-trait py-2 pl-3">
-          <dt className="text-encre-2">Gain ou perte</dt>
-          <dd className={`chiffres font-semibold ${s === 'hausse' ? 'text-hausse' : s === 'baisse' ? 'text-baisse' : ''}`}>
-            {gain == null ? '—' : <Montant valeur={gain} signe />}
+        <div className="min-w-0">
+          <dt className="text-xs text-encre-2">Gain ou perte</dt>
+          <dd className="mt-0.5">
+            {gain == null ? (
+              <span className="text-corps font-semibold text-encre-3">—</span>
+            ) : (
+              <Montant
+                valeur={gain}
+                signe
+                className={`chiffres inline-flex items-center rounded-full px-2 py-0.5 text-petit font-semibold ${
+                  s === 'hausse' ? 'bg-hausse-doux text-hausse' : s === 'baisse' ? 'bg-baisse-doux text-baisse' : 'bg-surface-2 text-encre-2'
+                }`}
+              />
+            )}
           </dd>
         </div>
       </dl>
@@ -429,7 +460,8 @@ function ResumeScelles({ groupes, filtre }: { groupes: GroupeScelle[]; filtre: b
 function LigneScelleCollection({ groupe: g }: { groupe: GroupeScelle }) {
   const s = sens(g.gain);
   return (
-    <li>
+    // filet entre les lignes, dans le bloc ; un peu d'air en plus autour de chaque produit
+    <li className="border-t border-trait py-1 first:border-t-0">
       <LigneScelle
         scelle={g.scelle}
         sousTitre={
@@ -487,8 +519,9 @@ function GrilleCollection({
   const { n, sentinelle, reste } = useRenduProgressif(groupes.length, colonnes * 20, initial, vue);
   useEffect(() => onAffiches(n), [n, onAffiches]);
   return (
-    <div className="pb-6">
-      <Grille colonnes={colonnes}>
+    <div className="pt-1 pb-6">
+      {/* clé = vue (filtre, extension, tri) : les premières pochettes reviennent en cascade */}
+      <Grille key={vue} colonnes={colonnes}>
         {groupes.slice(0, n).map((g, i) => (
           <PochetteCarte
             key={g.carte.id}

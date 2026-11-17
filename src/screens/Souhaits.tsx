@@ -1,4 +1,4 @@
-import { Check, Search, Trash2 } from 'lucide-react';
+import { Check, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from 'wouter';
 import { Bouton } from '../components/Bouton';
@@ -6,12 +6,13 @@ import { coteDe, pluriel } from '../components/classeur/calculs';
 import { LienBouton } from '../components/classeur/Controles';
 import { useMemoireDefilement } from '../components/classeur/defilement';
 import { AttenteDonnees } from '../components/classeur/EtatDonnees';
+import { Eventail } from '../components/classeur/Eventail';
 import { Ecran } from '../components/Ecran';
 import { Feuille } from '../components/Feuille';
 import { annoncer } from '../components/fiche/annonce';
 import { Vide } from '../components/Vide';
 import { Visuel } from '../components/Visuel';
-import { imageCarte, prixCarte, prixScelle, useDonnees, variante, type Donnees } from '../data/catalogue';
+import { imageCarte, prixCarte, prixScelle, useDonnees, variante, type Carte, type Donnees } from '../data/catalogue';
 import { objetDe, type ObjetCatalogue } from '../data/valeur';
 import { useSouhaits } from '../db/collection';
 import { db, type Souhait } from '../db/schema';
@@ -68,22 +69,26 @@ export function Souhaits() {
 
   const sous = lignes.filter((l) => l.sous);
   const autres = lignes.filter((l) => !l.sous);
+  // Un bloc blanc par groupe ; les premières lignes apparaissent en cascade
   const liste = (ls: LigneSouhaitDonnees[]) => (
-    <ul className="divide-y divide-trait">
+    <ul className="bloc cascade -mx-1 px-4">
       {ls.map((l) => (
         <LigneSouhait key={l.souhait.id} ligne={l} onPrixMax={() => setEdition(l)} onRetirer={() => void retirer(l)} />
       ))}
     </ul>
   );
+  const section = (id: string, titre: string, ls: LigneSouhaitDonnees[]) => (
+    <section aria-labelledby={id} className="mt-6">
+      <h2 id={id} className="flex items-baseline justify-between gap-3 px-1 pb-2.5">
+        <span className="truncate text-lg leading-tight font-bold">{titre}</span>
+        <span className="shrink-0 font-sans text-petit font-normal tracking-normal text-encre-2">{pluriel(ls.length, 'souhait')}</span>
+      </h2>
+      {liste(ls)}
+    </section>
+  );
 
   return (
-    <Ecran
-      titre="Souhaits"
-      retour
-      sousTitre={
-        lignes.length === 0 ? undefined : sous.length > 0 ? `${pluriel(lignes.length, 'souhait')}, ${nombreSous(sous.length)}` : pluriel(lignes.length, 'souhait')
-      }
-    >
+    <Ecran titre="Souhaits" retour>
       {lignes.length === 0 ? (
         <Vide
           titre="Aucun souhait pour l’instant"
@@ -94,25 +99,18 @@ export function Souhaits() {
             </LienBouton>
           }
         />
-      ) : sous.length > 0 ? (
-        <>
-          <section aria-labelledby="souhaits-sous" className="mt-2">
-            <h2 id="souhaits-sous" className="semi-large border-b border-trait pb-1.5 text-petit font-bold">
-              Sous ton prix max
-            </h2>
-            {liste(sous)}
-          </section>
-          {autres.length > 0 && (
-            <section aria-labelledby="souhaits-autres" className="mt-6">
-              <h2 id="souhaits-autres" className="semi-large border-b border-trait pb-1.5 text-petit font-bold">
-                Tes autres souhaits
-              </h2>
-              {liste(autres)}
-            </section>
-          )}
-        </>
       ) : (
-        liste(lignes)
+        <div className="pb-6">
+          <ResumeSouhaits lignes={lignes} nbSous={sous.length} />
+          {sous.length > 0 ? (
+            <>
+              {section('souhaits-sous', 'Sous ton prix max', sous)}
+              {autres.length > 0 && section('souhaits-autres', 'Tes autres souhaits', autres)}
+            </>
+          ) : (
+            <div className="mt-4">{liste(lignes)}</div>
+          )}
+        </div>
       )}
 
       <FeuillePrixMax ligne={edition} onFermer={() => setEdition(null)} />
@@ -122,6 +120,47 @@ export function Souhaits() {
 
 function nombreSous(n: number): string {
   return n > 1 ? `${n} sous ton prix max` : '1 sous ton prix max';
+}
+
+/** Bloc résumé : ce que coûteraient tous les souhaits à la cote du jour, combien passent sous le prix max. */
+function ResumeSouhaits({ lignes, nbSous }: { lignes: LigneSouhaitDonnees[]; nbSous: number }) {
+  let total = 0;
+  let sansCote = 0;
+  for (const l of lignes) {
+    if (l.cote == null) sansCote++;
+    else total += l.cote;
+  }
+  // Les cartes les plus chères de la liste, en éventail : ce qu'on a envie d'avoir
+  const top = useMemo(
+    () =>
+      lignes
+        .filter((l): l is LigneSouhaitDonnees & { objet: { type: 'carte'; carte: Carte } } => l.objet?.type === 'carte' && l.cote != null)
+        .sort((a, b) => (b.cote ?? 0) - (a.cote ?? 0))
+        .map((l) => l.objet.carte)
+        // une même carte peut être souhaitée en deux versions
+        .filter((c, i, t) => t.findIndex((x) => x.id === c.id) === i)
+        .slice(0, 3),
+    [lignes],
+  );
+  return (
+    <section aria-label="Résumé" className="bloc -mx-1 mt-1 flex items-center gap-3 p-4">
+      <div className="min-w-0 flex-1">
+        <p className="text-petit text-encre-2">Tes souhaits à la cote du jour</p>
+        <p className="font-titre chiffres mt-0.5 truncate text-[2.125rem] leading-[1.1] font-bold tracking-[-0.025em]">{euros(total)}</p>
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-petit text-encre-2">
+          <span>{pluriel(lignes.length, 'souhait')}</span>
+          {sansCote > 0 && <span className="text-encre-3">{sansCote > 1 ? `${sansCote} sans cote` : '1 sans cote'}</span>}
+        </p>
+        {nbSous > 0 && (
+          <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-hausse-doux px-2 py-0.5 text-xs font-semibold text-hausse">
+            <Check size={13} strokeWidth={3} aria-hidden />
+            {nombreSous(nbSous)}
+          </p>
+        )}
+      </div>
+      <Eventail cartes={top} />
+    </section>
+  );
 }
 
 function LigneSouhait({ ligne, onPrixMax, onRetirer }: { ligne: LigneSouhaitDonnees; onPrixMax: () => void; onRetirer: () => void }) {
@@ -161,15 +200,16 @@ function LigneSouhait({ ligne, onPrixMax, onRetirer }: { ligne: LigneSouhaitDonn
 
   const titre = (
     <>
-      <span className="line-clamp-2 text-petit leading-snug font-semibold">{nom}</span>
-      <span className="mt-0.5 flex min-w-0 gap-x-2 text-micro text-encre-2">{detail}</span>
+      <span className="line-clamp-2 text-corps leading-snug font-semibold">{nom}</span>
+      <span className="mt-0.5 flex min-w-0 gap-x-2 text-xs text-encre-2">{detail}</span>
     </>
   );
 
   return (
-    <li className="flex gap-3 py-3">
+    // filet entre les lignes, dans le bloc
+    <li className="flex gap-3.5 border-t border-trait py-3.5 first:border-t-0">
       {href ? (
-        <Link href={href} tabIndex={-1} aria-hidden className="w-14 shrink-0 active:opacity-70">
+        <Link href={href} tabIndex={-1} aria-hidden className="appui w-14 shrink-0">
           {visuel}
         </Link>
       ) : (
@@ -185,36 +225,43 @@ function LigneSouhait({ ligne, onPrixMax, onRetirer }: { ligne: LigneSouhaitDonn
             <div className="min-w-0 flex-1">{titre}</div>
           )}
           <div className="shrink-0 text-right">
-            <div className="chiffres font-bold">{euros(cote)}</div>
+            <div className="font-titre chiffres text-lg leading-tight font-bold tracking-[-0.01em]">{euros(cote)}</div>
             <div className="text-micro text-encre-2">{cote == null ? 'pas de cote' : 'cote du jour'}</div>
           </div>
         </div>
 
         {sous && ecart != null ? (
-          <p className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-hausse-doux px-1.5 py-0.5 text-micro font-semibold text-hausse">
-            <Check size={14} strokeWidth={2.8} aria-hidden />
+          <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-hausse-doux px-2 py-0.5 text-xs font-semibold text-hausse">
+            <Check size={13} strokeWidth={3} aria-hidden />
             {ecart > 0.004 ? `${euros(ecart)} sous ton prix max` : 'Pile à ton prix max'}
           </p>
         ) : ecart != null ? (
-          <p className="mt-1.5 text-micro text-encre-2">{euros(-ecart)} au-dessus de ton prix max</p>
+          <p className="mt-2 text-xs text-encre-2">{euros(-ecart)} au-dessus de ton prix max</p>
         ) : null}
 
         <div className="mt-1 flex items-center justify-between gap-2">
           {objet ? (
+            // 44 px pour le doigt, pilule de 34 px à l'œil
             <button
               type="button"
               onClick={onPrixMax}
-              className="-ml-2 flex min-h-11 items-center gap-1.5 rounded-xl px-2 text-petit active:bg-surface-2"
+              aria-label={s.prixMax != null ? `Modifier le prix max de ${nom}, ${euros(s.prixMax)}` : `Fixer un prix max pour ${nom}`}
+              className="group appui -ml-0.5 flex min-h-11 min-w-0 items-center focus-visible:outline-none"
             >
-              {s.prixMax != null ? (
-                <>
-                  <span className="text-encre-2">Prix max</span>
-                  <span className="chiffres font-semibold">{euros(s.prixMax)}</span>
-                  <span className="font-semibold text-dos">Modifier</span>
-                </>
-              ) : (
-                <span className="font-semibold text-dos">Fixer un prix max</span>
-              )}
+              <span className="flex h-[34px] min-w-0 items-center gap-1.5 rounded-full bg-surface px-3 text-petit shadow-[inset_0_0_0_1px_var(--trait)] group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-encre group-active:bg-surface-2">
+                {s.prixMax != null ? (
+                  <>
+                    <span className="shrink-0 text-encre-2">Prix max</span>
+                    <span className="chiffres truncate font-semibold">{euros(s.prixMax)}</span>
+                    <Pencil size={13} strokeWidth={2.2} aria-hidden className="shrink-0 text-encre-2" />
+                  </>
+                ) : (
+                  <>
+                    <Plus size={15} strokeWidth={2.4} aria-hidden className="shrink-0" />
+                    <span className="truncate font-semibold">Fixer un prix max</span>
+                  </>
+                )}
+              </span>
             </button>
           ) : (
             <span />
@@ -224,9 +271,9 @@ function LigneSouhait({ ligne, onPrixMax, onRetirer }: { ligne: LigneSouhaitDonn
             onClick={onRetirer}
             aria-label={`Retirer ${nom} des souhaits`}
             title="Retirer des souhaits"
-            className="-mr-2 flex size-11 shrink-0 items-center justify-center rounded-full text-encre-2 active:bg-surface-2"
+            className="appui -mr-2.5 flex size-11 shrink-0 items-center justify-center rounded-full text-encre-3 active:bg-surface-2 active:text-baisse"
           >
-            <Trash2 size={20} aria-hidden />
+            <Trash2 size={19} aria-hidden />
           </button>
         </div>
       </div>
