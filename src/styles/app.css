@@ -34,6 +34,9 @@
   --dos: #2b4c9f;
   --dos-doux: #e3e9f6;
   --sur-dos: #ffffff;
+  --serie-1: #2b4c9f;
+  --serie-2: #b07a00;
+  --grille: #e6e9ef;
   --bordure: #f4c430;
   --bordure-encre: #3a2c00;
   --hausse: #12805a;
@@ -56,6 +59,9 @@
     --dos: #93b1ff;
     --dos-doux: #22325a;
     --sur-dos: #0e1628;
+    --serie-1: #6b8ff0;
+    --serie-2: #b8890c;
+    --grille: #24304d;
     --bordure: #f4c430;
     --bordure-encre: #3a2c00;
     --hausse: #45cf91;
@@ -78,6 +84,9 @@
   --dos: #93b1ff;
   --dos-doux: #22325a;
   --sur-dos: #0e1628;
+  --serie-1: #6b8ff0;
+  --serie-2: #b8890c;
+  --grille: #24304d;
   --hausse: #45cf91;
   --hausse-doux: #133a2c;
   --baisse: #ff7a7a;
@@ -99,6 +108,9 @@
   --color-dos: var(--dos);
   --color-dos-doux: var(--dos-doux);
   --color-sur-dos: var(--sur-dos);
+  --color-serie-1: var(--serie-1);
+  --color-serie-2: var(--serie-2);
+  --color-grille: var(--grille);
   --color-bordure: var(--bordure);
   --color-bordure-encre: var(--bordure-encre);
   --color-hausse: var(--hausse);
