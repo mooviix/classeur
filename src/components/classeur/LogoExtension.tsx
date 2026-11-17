@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Extension } from '../../data/catalogue';
+import { illustrationExtension, useDonneesPretes, type Extension } from '../../data/catalogue';
 
 type Taille = 'ligne' | 'entete' | 'mini';
 
@@ -18,6 +18,28 @@ export function LogoExtension({ ext, taille = 'ligne', className = '' }: { ext: 
   const sources = [ext.logo, ext.symbole].filter((s): s is string => !!s);
   const [rang, setRang] = useState(0);
   const src = sources[rang];
+
+  const d = useDonneesPretes();
+  const [illustrationKo, setIllustrationKo] = useState(false);
+  const illustration = !src && d && !illustrationKo ? illustrationExtension(d, ext) : null;
+
+  if (!src && illustration) {
+    // Ni logo ni symbole (extension toute récente) : la plus belle carte du set, en miniature.
+    return (
+      <span aria-hidden className={`flex shrink-0 items-center gap-2 ${BOITES[taille]} ${className}`}>
+        <img
+          src={illustration}
+          alt=""
+          loading={taille === 'entete' ? 'eager' : 'lazy'}
+          decoding="async"
+          draggable={false}
+          onError={() => setIllustrationKo(true)}
+          className="ombre-carte aspect-[63/88] h-full w-auto rounded-[3px] object-cover"
+        />
+        {taille === 'entete' && <span className="font-titre line-clamp-2 min-w-0 text-lg leading-tight font-bold">{ext.nom}</span>}
+      </span>
+    );
+  }
 
   if (!src) {
     // En-tête du classeur : le nom en entier (le titre de l'écran peut être tronqué).

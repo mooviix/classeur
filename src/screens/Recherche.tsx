@@ -410,7 +410,7 @@ function AccueilCartes({ d, onExemple }: { d: Donnees; onExemple: (q: string) =>
           <li key={e.id}>
             <Link href={`/extensions/${encodeURIComponent(e.id)}`} className="flex min-h-16 items-center gap-3 px-3 py-2.5 active:bg-surface-2">
               <span className="flex h-11 w-[4.5rem] shrink-0 items-center justify-center rounded-xl bg-surface-2 p-1.5">
-                <LogoExtension ext={e} className="max-h-full max-w-full object-contain" />
+                <LogoExtension ext={e} illustration className="max-h-full max-w-full object-contain" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-semibold">{e.nom}</span>

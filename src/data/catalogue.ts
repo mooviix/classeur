@@ -239,12 +239,18 @@ export function chargerDonnees(forcer = false): Promise<void> {
     try {
       const meta = await lireJson<FichierMeta>('meta.json', { cache: 'no-cache' });
       if (meta.v !== 1) throw new Error('Format de données inconnu : mets l’app à jour.');
-      const [cat, sc, prix] = await Promise.all([
+      const [cat, sc, prix, logos] = await Promise.all([
         lireJson<FichierCatalogue>(meta.catalogue),
         lireJson<FichierScelles>(meta.scelles),
         lireJson<FichierPrix>(meta.prix),
+        // logos d'autres sources (facultatif : on s'en passe s'il manque)
+        meta.logos ? lireJson<Record<string, string>>(meta.logos).catch(() => null) : Promise.resolve(null),
       ]);
-      publier({ statut: 'pret', donnees: construire(meta, cat, sc, prix) });
+      const donnees = construire(meta, cat, sc, prix);
+      if (logos) {
+        for (const e of donnees.extensions) if (!e.logo && typeof logos[e.id] === 'string') e.logo = logos[e.id];
+      }
+      publier({ statut: 'pret', donnees });
     } catch (e) {
       // Si on avait déjà des données, on les garde (rechargement raté hors ligne).
       if (etat.statut !== 'pret') {
@@ -288,6 +294,31 @@ export function useDonneesPretes(): Donnees | null {
 
 export function imageCarte(c: Pick<Carte, 'image'>, qualite: 'low' | 'high' = 'low'): string | null {
   return c.image ? `${c.image}/${qualite}.webp` : null;
+}
+
+// ---------- Illustration d'une extension ----------
+
+const illustrations = new WeakMap<Extension, string | null>();
+
+/**
+ * Image qui représente une extension quand elle n'a ni logo ni symbole : la carte la plus chère qui a une image
+ * (souvent la plus belle illustration du set), sinon la dernière carte illustrée.
+ */
+export function illustrationExtension(d: Donnees, ext: Extension): string | null {
+  if (illustrations.has(ext)) return illustrations.get(ext) ?? null;
+  let meilleure: Carte | null = null;
+  let meilleurPrix = -1;
+  for (const c of ext.cartes) {
+    if (!c.image) continue;
+    const p = prixCarte(d, c)?.tendance ?? 0;
+    if (p > meilleurPrix) {
+      meilleurPrix = p;
+      meilleure = c;
+    }
+  }
+  const url = meilleure ? imageCarte(meilleure, 'low') : null;
+  illustrations.set(ext, url);
+  return url;
 }
 
 // ---------- Prix ----------

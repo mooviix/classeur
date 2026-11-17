@@ -36,6 +36,11 @@ export interface FichierMeta {
   };
   /** Fichier(s) du scanner, chemin relatif à data/ (optionnel tant que le scanner n'est pas prêt). */
   scan?: string;
+  /**
+   * Logos venus d'autres sources que TCGdex (Poképédia…) pour les extensions qui n'en ont pas :
+   * chemin relatif à data/ d'un fichier { "<id set>": "<url du logo>" } (optionnel).
+   */
+  logos?: string;
 }
 
 /** [id série, nom FR] — ex. ['sv', 'Écarlate et Violet'] */
