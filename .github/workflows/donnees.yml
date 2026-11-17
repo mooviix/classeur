@@ -98,7 +98,7 @@ jobs:
         if: steps.decision.outputs.deployer == 'true'
         # Script d'un autre module : s'il échoue, on publie quand même (les empreintes précédentes restent valables).
         continue-on-error: true
-        run: if [ -f scripts/scan/construire.ts ]; then node scripts/scan/construire.ts; fi
+        run: if [ -f scripts/scan/construire.ts ]; then npm ci --no-audit --no-fund && node scripts/scan/construire.ts; fi
 
       - name: Champ « scan » de meta.json (d'après data/scan/manifeste.json)
         if: steps.decision.outputs.deployer == 'true'

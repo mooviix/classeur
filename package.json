@@ -16,7 +16,9 @@
     "icones": "pwa-assets-generator --preset minimal-2023 public/icons/icone.svg",
     "donnees": "node scripts/donnees/construire.ts",
     "donnees:amorcer": "node scripts/donnees/amorcer-wayback.ts",
-    "donnees:verifier": "node scripts/donnees/verifier.ts"
+    "donnees:verifier": "node scripts/donnees/verifier.ts",
+    "scan:construire": "node scripts/scan/construire.ts",
+    "scan:tester": "node scripts/scan/tester.ts"
   },
   "dependencies": {
     "@fontsource-variable/archivo": "^5.3.0",
@@ -34,6 +36,7 @@
     "@types/react-dom": "^19.3.0",
     "@vite-pwa/assets-generator": "^2.0.0",
     "@vitejs/plugin-react": "^6.3.0",
+    "sharp": "^0.35.5",
     "tailwindcss": "^4.3.5",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",
