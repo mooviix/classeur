@@ -4,15 +4,11 @@ import Dexie, { type EntityTable } from 'dexie';
 
 export type TypeObjet = 'carte' | 'scelle';
 
-/** Variantes d'impression d'une carte (même illustration, finition différente). */
-export type Variante =
-  | 'normale'
-  | 'reverse'
-  | 'holo'
-  | 'premiere-edition'
-  | 'illimitee'
-  | 'promo-tampon'
-  | 'autre';
+/**
+ * Variante d'impression d'une carte (même illustration, finition différente) : clé stable venant du catalogue
+ * ('normale', 'reverse', 'holo', 'premiere-edition', 'reverse-pokeball', 'reverse-masterball', 'autre-…').
+ */
+export type Variante = string;
 
 /** États Cardmarket. */
 export type Etat = 'MT' | 'NM' | 'EX' | 'GD' | 'LP' | 'PL' | 'PO';

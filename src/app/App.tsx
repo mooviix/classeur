@@ -11,6 +11,7 @@ import { FicheCarte } from '../screens/FicheCarte';
 import { FicheScelle } from '../screens/FicheScelle';
 import { Reglages } from '../screens/Reglages';
 import { Souhaits } from '../screens/Souhaits';
+import { Analyse } from '../screens/Analyse';
 import { Introuvable } from '../screens/Introuvable';
 
 /** Écrans plein écran, sans la barre d'onglets. */
@@ -32,6 +33,7 @@ function Coquille() {
           <Route path="/carte/:id">{(p) => <FicheCarte id={decodeURIComponent(p.id)} />}</Route>
           <Route path="/scelle/:id">{(p) => <FicheScelle id={decodeURIComponent(p.id)} />}</Route>
           <Route path="/souhaits" component={Souhaits} />
+          <Route path="/analyse" component={Analyse} />
           <Route path="/reglages" component={Reglages} />
           <Route component={Introuvable} />
         </Switch>
