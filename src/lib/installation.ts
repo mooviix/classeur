@@ -1,4 +1,4 @@
-// Installer l'app sur l'écran d'accueil.
+// Installer l'app sur l'écran d'accueil, la garder utilisable hors ligne dès la première visite, et la mettre à jour.
 // - Android (Chrome, Edge, Samsung Internet) : le navigateur envoie `beforeinstallprompt` une seule fois, tôt.
 //   Ce module est importé dans main.tsx pour poser l'écouteur avant le premier affichage ; on garde l'invite
 //   pour le bouton « Installer » des réglages.
@@ -86,3 +86,60 @@ export function useInstallation(): EtatInstallation {
     () => etat,
   );
 }
+
+// ---------- Hors ligne dès la première visite ----------
+// À la toute première visite, le service worker s'installe PENDANT que l'app charge déjà le catalogue, les prix et
+// les images : ces requêtes ne passent pas par lui, rien n'est gardé, et l'app rechargée hors ligne affichait
+// « Impossible de charger le catalogue ». Dès qu'il prend la main, on lui redemande ces fichiers : il les range
+// dans ses caches (mêmes règles que d'habitude, voir vite.config.ts).
+
+/** Hôtes des images gardées par le service worker (cartes TCGdex, scellés). */
+const HOTES_IMAGES = new Set(['assets.tcgdex.net', 'www.pokepedia.fr', 'tcgplayer-cdn.tcgplayer.com']);
+const redemandees = new Set<string>();
+
+function confierAuServiceWorker(entrees: PerformanceEntryList) {
+  for (const e of entrees as PerformanceResourceTiming[]) {
+    // workerStart > 0 : la requête est déjà passée par le service worker
+    if (e.workerStart > 0 || redemandees.has(e.name)) continue;
+    let url: URL;
+    try {
+      url = new URL(e.name);
+    } catch {
+      continue;
+    }
+    const memeSite = url.origin === location.origin;
+    if (memeSite ? !url.pathname.includes('/data/') : !HOTES_IMAGES.has(url.hostname)) continue;
+    redemandees.add(e.name);
+    void fetch(e.name, memeSite ? undefined : { mode: 'no-cors' }).catch(() => {});
+  }
+}
+
+if ('serviceWorker' in navigator && !navigator.serviceWorker.controller && typeof PerformanceObserver === 'function') {
+  navigator.serviceWorker.addEventListener(
+    'controllerchange',
+    () => {
+      confierAuServiceWorker(performance.getEntriesByType('resource'));
+      // Gros fichiers partis avant la prise de main et arrivés après : même traitement, pendant une minute.
+      const observateur = new PerformanceObserver((liste) => confierAuServiceWorker(liste.getEntries()));
+      observateur.observe({ type: 'resource' });
+      setTimeout(() => observateur.disconnect(), 60_000);
+    },
+    { once: true },
+  );
+}
+
+// ---------- Nouvelle version ----------
+// Le navigateur ne cherche une nouvelle version de l'app qu'au chargement de la page. Installée, l'app reste
+// souvent ouverte des jours en arrière-plan : on vérifie aussi à chaque retour au premier plan (au plus une fois
+// par heure). Si une version est publiée, le service worker l'installe et la page se recharge (registerType
+// 'autoUpdate', main.tsx).
+let derniereVerification = Date.now();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || !('serviceWorker' in navigator)) return;
+  if (Date.now() - derniereVerification < 60 * 60 * 1000) return;
+  derniereVerification = Date.now();
+  void navigator.serviceWorker
+    .getRegistration()
+    .then((r) => r?.update())
+    .catch(() => {});
+});

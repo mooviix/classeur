@@ -2,6 +2,7 @@ import { Link } from 'wouter';
 import { imageCarte } from '../../data/catalogue';
 import type { ObjetCatalogue } from '../../data/valeur';
 import { euros, pourcent } from '../../lib/format';
+import { useMontantsMasques } from '../../lib/montants';
 import { Visuel } from '../Visuel';
 import { hrefObjet, nomObjet } from './LigneObjet';
 
@@ -28,6 +29,8 @@ export interface ElementBande {
  * Elle déborde jusqu'aux bords de l'écran et défile au doigt ; les cartes arrivent en cascade.
  */
 export function BandeCartes({ elements, libelle }: { elements: ElementBande[]; libelle: string }) {
+  // La cote vient de la collection (décote d'état, valeur saisie) : masquée par l'œil comme les autres montants.
+  const masques = useMontantsMasques();
   return (
     // marge haute rendue par le défilement : l'ombre des cartes n'est pas rognée
     <ul
@@ -57,7 +60,13 @@ export function BandeCartes({ elements, libelle }: { elements: ElementBande[]; l
               <span className="mt-2 block truncate text-petit leading-tight font-semibold">{nomObjet(o)}</span>
               {/* chiffres proportionnels (pas de colonne à aligner) ; si tout ne tient pas, le % passe à la ligne, à droite */}
               <span className="mt-0.5 flex flex-wrap items-baseline justify-between gap-x-1 text-xs">
-                <span className="whitespace-nowrap">{coteCourte(e.cote)}</span>
+                {masques ? (
+                  <span className="whitespace-nowrap" aria-label="Montant masqué">
+                    •••• €
+                  </span>
+                ) : (
+                  <span className="whitespace-nowrap">{coteCourte(e.cote)}</span>
+                )}
                 <span className={`ml-auto font-semibold whitespace-nowrap ${sensRatio(e.ratio)}`}>{pourcent(e.ratio)}</span>
               </span>
             </Link>

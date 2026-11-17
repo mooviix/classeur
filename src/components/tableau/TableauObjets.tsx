@@ -137,7 +137,7 @@ export function TableauObjets({ lignes, legende }: { lignes: LigneAnalyse[]; leg
                 {l.achat == null ? <span className="text-encre-3">—</span> : <MontantCellule valeur={l.achat} />}
               </td>
               <td className="chiffres py-2.5 pl-1.5 text-right whitespace-nowrap">
-                {l.cote == null ? <span className="text-encre-3">—</span> : court(l.cote)}
+                {l.cote == null ? <span className="text-encre-3">—</span> : <MontantCellule valeur={l.cote} />}
               </td>
               <td className="chiffres py-2.5 pl-1.5 text-right whitespace-nowrap">
                 {l.gain == null ? (

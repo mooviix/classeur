@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'wouter';
 import { imageCarte, variante as varianteDe } from '../../data/catalogue';
 import type { ObjetCatalogue } from '../../data/valeur';
+import { numeroCarte } from '../fiche/outils';
 import { Visuel } from '../Visuel';
 
 export function hrefObjet(o: ObjetCatalogue): string {
@@ -19,7 +20,8 @@ export function nomObjet(o: ObjetCatalogue): string {
 export function detailObjet(o: ObjetCatalogue, cleVariante?: string): string {
   if (o.type === 'scelle') return o.scelle.ext?.nom ?? o.scelle.type ?? 'Produit scellé';
   const c = o.carte;
-  const morceaux = [c.ext.nom, `${c.num}/${c.ext.officiel}`];
+  // « 199/165 », mais « TG05 », « DP01 » ou « 001 » (promos sans nombre officiel) tels quels
+  const morceaux = [c.ext.nom, numeroCarte(c.num, c.ext.officiel)];
   const v = cleVariante ? varianteDe(c, cleVariante) : undefined;
   if (v && v !== c.variantes[0]) morceaux.push(v.libelle);
   return morceaux.join(', ');

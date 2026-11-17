@@ -367,7 +367,12 @@ function indexer(d: Donnees): Index {
   return ix;
 }
 
-function extensionsPossibles(d: Donnees, ix: Index, extension: string, code: string): Extension[] {
+/**
+ * Extensions désignées par les colonnes extension / code. `flou` : trouvées seulement parce que leur nom apparaît
+ * dans le texte (« Écarlate et Violet : 151 » contient « Écarlate et Violet » ET « 151 ») : le nom de la carte
+ * doit alors confirmer le choix.
+ */
+function extensionsPossibles(d: Donnees, ix: Index, extension: string, code: string): { exts: Extension[]; flou: boolean } {
   const res = new Set<Extension>();
   if (code) for (const e of ix.extParCode.get(code.trim().toUpperCase()) ?? []) res.add(e);
   if (extension) {
@@ -378,17 +383,16 @@ function extensionsPossibles(d: Donnees, ix: Index, extension: string, code: str
     const parId = d.extensionsParId.get(brut);
     if (parId) res.add(parId);
     if (res.size === 0 && n) {
-      // « Écarlate et Violet : Évolutions Prismatiques » contient « evolutions prismatiques »
+      // « Écarlate et Violet : Évolutions Prismatiques » contient « evolutions prismatiques » (et le nom de la série,
+      // qui est aussi celui de son extension de base) : on garde toutes les extensions nommées dans le texte.
       const entoure = ` ${n} `;
       for (const [nomExt, e] of ix.nomsExt) {
-        if (nomExt.length >= 3 && entoure.includes(` ${nomExt} `)) {
-          res.add(e);
-          break;
-        }
+        if (nomExt.length >= 3 && entoure.includes(` ${nomExt} `)) res.add(e);
       }
+      return { exts: [...res], flou: res.size > 0 };
     }
   }
-  return [...res];
+  return { exts: [...res], flou: false };
 }
 
 function memeNom(carte: Carte, nom: string): boolean {
@@ -398,13 +402,17 @@ function memeNom(carte: Carte, nom: string): boolean {
   return a === b || a.includes(b) || b.includes(a);
 }
 
-type Resultat = { ok: true; type: 'carte' | 'scelle'; ref: string; carte?: Carte } | { ok: false; raison: string };
+type Resultat =
+  | { ok: true; type: 'carte' | 'scelle'; ref: string; carte?: Carte; /** Ce qui mérite un coup d'œil avant l'ajout */ alerte?: string }
+  | { ok: false; raison: string };
+
+const nomsExtensions = (exts: Extension[]) => exts.map((e) => e.nom).join(' ou ');
 
 function trouverCarte(d: Donnees, ix: Index, nom: string, extension: string, code: string, numero: string): Resultat {
   const [numBrut, totalBrut] = numero.split('/').map((s) => s.trim());
   const num = numBrut ? numCourt(numBrut.replace(/^n°\s*/i, '').replace(/^#/, '')) : '';
   const total = totalBrut && /^\d+$/.test(totalBrut) ? Number(totalBrut) : null;
-  const exts = extensionsPossibles(d, ix, extension, code);
+  const { exts, flou } = extensionsPossibles(d, ix, extension, code);
   if ((extension || code) && exts.length === 0 && total == null) return { ok: false, raison: `extension « ${extension || code} » introuvable` };
 
   let candidats: Carte[];
@@ -419,19 +427,28 @@ function trouverCarte(d: Donnees, ix: Index, nom: string, extension: string, cod
     candidats = (exts.length ? exts.flatMap((e) => e.cartes) : d.cartes).filter((c) => normaliser(c.nom) === n);
     if (candidats.length > 1) return { ok: false, raison: 'numéro manquant (plusieurs cartes portent ce nom)' };
   }
-  if (candidats.length > 1 && nom) {
-    const memes = candidats.filter((c) => memeNom(c, nom));
-    if (memes.length) candidats = memes;
-  }
   if (candidats.length === 0) {
-    return { ok: false, raison: exts.length ? `n° ${numBrut} introuvable dans ${exts[0].nom}` : 'carte introuvable' };
+    if (!exts.length) return { ok: false, raison: 'carte introuvable' };
+    return { ok: false, raison: `${num ? `n° ${numBrut}` : `« ${nom} »`} introuvable dans ${nomsExtensions(exts)}` };
+  }
+  // Le nom tranche entre plusieurs extensions possibles, et confirme un rapprochement incertain.
+  const memes = nom ? candidats.filter((c) => memeNom(c, nom)) : candidats;
+  if (memes.length) candidats = memes;
+  else if (flou || !exts.length) {
+    // Extension devinée dans le texte, ou numéro / total sans extension : sans le bon nom, ce serait une autre carte.
+    const ou = exts.length ? ` dans ${nomsExtensions(exts)}` : total != null ? ` (sur ${total})` : '';
+    return { ok: false, raison: `pas de « ${nom} » n° ${numBrut}${ou}` };
   }
   if (candidats.length > 1) {
     // Même numéro dans plusieurs extensions sans moyen de trancher
     if (!exts.length) return { ok: false, raison: 'plusieurs extensions possibles : ajoute la colonne extension' };
     candidats.sort((a, b) => (b.ext.sortie ?? '').localeCompare(a.ext.sortie ?? ''));
   }
-  return { ok: true, type: 'carte', ref: candidats[0].id, carte: candidats[0] };
+  const carte = candidats[0];
+  // Extension et numéro exacts, mais le nom diffère (faute de frappe dans le numéro, ou nom dans une autre langue) :
+  // on garde la carte désignée et on la montre avant l'ajout.
+  const alerte = nom && !memeNom(carte, nom) ? `« ${nom} » ajoutée comme ${carte.nom} (${carte.ext.nom}, n° ${carte.num}) : vérifie le numéro` : undefined;
+  return { ok: true, type: 'carte', ref: carte.id, carte, alerte };
 }
 
 function trouverScelle(ix: Index, nom: string): Resultat {
@@ -460,6 +477,21 @@ export interface RapportImport {
   /** Lignes à quantité 0 ignorées (listes de cartes manquantes, par exemple) */
   ignorees: number;
   rejetees: LigneRejetee[];
+  /** Lignes reconnues (elles seront ajoutées) dont le nom ne correspond pas à la carte trouvée : à vérifier */
+  aVerifier: LigneRejetee[];
+}
+
+/**
+ * Texte d'un fichier CSV. UTF-8 d'abord (Numbers, Google Sheets, notre export) ; sinon Windows-1252, l'encodage
+ * des CSV enregistrés par Excel (« Salamèche » y serait illisible en UTF-8).
+ */
+export async function lireFichierTexte(f: Blob): Promise<string> {
+  const octets = await f.arrayBuffer();
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(octets);
+  } catch {
+    return new TextDecoder('windows-1252').decode(octets);
+  }
 }
 
 /**
@@ -488,15 +520,15 @@ export function lireCsv(texte: string, d: Donnees): RapportImport {
   }
 
   const ix = indexer(d);
-  const rapport: RapportImport = { lots: [], lignes: 0, exemplaires: 0, ignorees: 0, rejetees: [] };
+  const rapport: RapportImport = { lots: [], lignes: 0, exemplaires: 0, ignorees: 0, rejetees: [], aVerifier: [] };
 
   for (const e of enregistrements.slice(iEntete + 1)) {
     const val = (c: Colonne) => {
       const i = colonnes.get(c);
       return i == null ? '' : (e.cellules[i] ?? '').trim();
     };
-    const rejeter = (raison: string) =>
-      rapport.rejetees.push({ ligne: e.ligne, texte: e.cellules.filter(Boolean).join(' ; ').slice(0, 90), raison });
+    const texte = e.cellules.filter(Boolean).join(' ; ').slice(0, 90);
+    const rejeter = (raison: string) => rapport.rejetees.push({ ligne: e.ligne, texte, raison });
 
     // Quantité : vide = 1 ; 0 = ligne ignorée sans bruit
     let quantite = 1;
@@ -536,6 +568,7 @@ export function lireCsv(texte: string, d: Donnees): RapportImport {
         if (!res.ok && typeVoulu == null && !val('numero')) {
           const s = trouverScelle(ix, nom);
           if (s.ok) res = s;
+          else if (res.raison === 'carte introuvable') res = { ok: false, raison: 'ni carte ni produit scellé à ce nom' };
         }
       }
       if (!res.ok && ref) res = { ok: false, raison: `référence « ${ref} » inconnue, et ${res.raison}` };
@@ -569,6 +602,7 @@ export function lireCsv(texte: string, d: Donnees): RapportImport {
     rapport.lots.push(lot);
     rapport.lignes++;
     rapport.exemplaires += quantite;
+    if (res.alerte) rapport.aVerifier.push({ ligne: e.ligne, texte, raison: res.alerte });
   }
   return rapport;
 }

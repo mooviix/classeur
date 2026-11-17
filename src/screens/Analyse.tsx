@@ -1,5 +1,6 @@
 // Analyse : investi, valeur actuelle, plus-value latente, bénéfice réalisé, répartition par extension et par
 // type de scellé, détail par objet (triable) et ventes (annulables). Le filtre Tout / Cartes / Scellés vaut pour tout l'écran.
+import { useLiveQuery } from 'dexie-react-hooks';
 import { Search } from 'lucide-react';
 import { useId, useMemo, useState, type ReactNode } from 'react';
 import { Bouton } from '../components/Bouton';
@@ -16,7 +17,7 @@ import { TableauObjets, type LigneAnalyse } from '../components/tableau/TableauO
 import { useDonnees, type Donnees } from '../data/catalogue';
 import { calculerBilan, objetDe, valoriser, type Bilan, type ObjetCatalogue } from '../data/valeur';
 import { annulerVente, beneficeVente, usePossessions, useVentes } from '../db/collection';
-import { useReglages, type Reglages } from '../db/reglages';
+import { lireReglages, REGLAGES_PAR_DEFAUT, type Reglages } from '../db/reglages';
 import type { Possession, Vente } from '../db/schema';
 import { dateCourte, pourcent } from '../lib/format';
 
@@ -33,10 +34,13 @@ export function Analyse() {
   const d = etat.statut === 'pret' ? etat.donnees : null;
   const lots = usePossessions();
   const ventes = useVentes();
-  const r = useReglages();
-  const [filtre, setFiltre] = useState<Filtre>('tout');
+  const reglages = useLiveQuery(lireReglages, []);
+  const r = reglages ?? REGLAGES_PAR_DEFAUT;
+  // Scellés non comptés (réglages) : on arrive sur « Cartes », qui donne les mêmes chiffres que l'accueil.
+  const [choix, setChoix] = useState<Filtre | null>(null);
+  const filtre: Filtre = choix ?? (r.inclureScelles || !lots?.some((l) => l.type === 'carte') ? 'tout' : 'carte');
 
-  if (!lots || !ventes) return <Ecran titre="Analyse" retour>{null}</Ecran>;
+  if (!lots || !ventes || !reglages) return <Ecran titre="Analyse" retour>{null}</Ecran>;
 
   if (lots.length === 0 && ventes.length === 0) {
     return (
@@ -58,7 +62,7 @@ export function Analyse() {
     <Ecran
       titre="Analyse"
       retour
-      barre={<Segments options={FILTRES} valeur={filtre} onChange={setFiltre} label="Objets analysés" />}
+      barre={<Segments options={FILTRES} valeur={filtre} onChange={setChoix} label="Objets analysés" />}
     >
       {d ? <Contenu d={d} lots={lots} ventes={ventes} r={r} filtre={filtre} /> : <AttenteDonnees etat={etat} />}
     </Ecran>
@@ -90,9 +94,18 @@ function Contenu({ d, lots, ventes, r, filtre }: { d: Donnees; lots: Possession[
     );
   }
 
+  // Seul écran où les scellés comptent malgré le réglage : on le dit, pour que l'écart avec l'accueil s'explique.
+  const scellesHorsAccueil = filtre === 'tout' && !r.inclureScelles && lotsF.some((l) => l.type === 'scelle');
+
   return (
     <>
       <Indicateurs bilan={bilan} lots={lotsF} ventes={ventesF} />
+      {scellesHorsAccueil && (
+        <p className="mt-2 px-1 text-xs text-encre-2">
+          Les scellés sont comptés ici, mais pas sur l’accueil (réglage « Compter les scellés » désactivé). Choisis « Cartes » pour retrouver les
+          chiffres de l’accueil.
+        </p>
+      )}
       {/* Une seule catégorie ne fait pas un graphique : la répartition n'apparaît qu'à partir de deux. */}
       {parExtension.length > 1 && (
         <Section titre="Valeur par extension">
@@ -109,7 +122,10 @@ function Contenu({ d, lots, ventes, r, filtre }: { d: Donnees; lots: Possession[
         </Section>
       )}
       {lignes.length > 0 && (
-        <Section titre="Détail par objet" aside={<span className="shrink-0 text-petit text-encre-2">{pluriel(lignes.length, 'objet')}</span>}>
+        <Section
+          titre="Détail par objet"
+          aside={<span className="shrink-0 text-petit text-encre-2">{pluriel(lignes.length, 'objet différent', 'objets différents')}</span>}
+        >
           <div className="bloc px-3 pt-1 pb-1">
             <TableauObjets lignes={lignes} legende="Détail par objet" />
           </div>

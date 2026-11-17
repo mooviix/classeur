@@ -78,7 +78,9 @@ export function valoriser(d: Donnees, lot: Pick<Possession, 'type' | 'ref' | 'va
   if (base == null) return { unitaire: null, j1: null, j7: null, j30: null, source: 'aucune', prix, ratio: 1 };
   // Une carte gradée n'a pas de décote d'état (sans cote gradée, on montre la cote de la carte brute).
   const ratio = obj?.type === 'carte' && r.decoteEtat && !lot.gradation ? ratioEtat(lot.etat, base) : 1;
-  const x = (v: number | null) => (v == null ? null : v * ratio);
+  // Prix passés : décote recalculée sur chaque prix (comme la courbe), pas celle d'aujourd'hui
+  const decotee = obj?.type === 'carte' && r.decoteEtat && !lot.gradation;
+  const x = (v: number | null) => (v == null ? null : v * (decotee ? ratioEtat(lot.etat, v) : 1));
   return { unitaire: base * ratio, j1: x(prix?.j1 ?? null), j7: x(prix?.j7 ?? null), j30: x(prix?.j30 ?? null), source: 'cardmarket', prix, ratio };
 }
 
@@ -208,7 +210,14 @@ export async function calculerCourbeCollection(d: Donnees, lots: Possession[], r
     const f = fichiers.get(groupe);
     const serie = f?.p[String(cm)];
     const valeurs = holo ? serie?.th : serie?.t;
-    if (!f || !valeurs) continue;
+    // Pas d'historique pour ce produit (scellé coté à l'offre la plus basse, produit tout neuf…) : on le compte à sa
+    // valeur d'aujourd'hui sur toute la période, pour que la courbe finisse bien sur la valeur totale affichée.
+    const aucunPrixSuivi = !f || !valeurs || !valeurs.some((v) => typeof v === 'number' && v > 0);
+    if (aucunPrixSuivi) {
+      const v = valoriser(d, l, r).unitaire;
+      if (v != null) fixe += v * l.quantite;
+      continue;
+    }
     // valeurs alignées sur f.jours → report sur l'axe commun, en prolongeant la dernière valeur connue.
     // Avant le premier prix connu (produit sorti en cours de période, ou suivi commencé plus tard), on reprend ce
     // premier prix : sinon l'objet « entrerait » dans la courbe d'un coup et créerait un faux saut.

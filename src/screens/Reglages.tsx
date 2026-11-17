@@ -15,7 +15,7 @@ import { ajouterLot, usePossessions } from '../db/collection';
 import { changerReglage, useReglages, type Reglages as ReglagesApp } from '../db/reglages';
 import { derniereSauvegarde, exporterSauvegarde, restaurerSauvegarde } from '../db/sauvegarde';
 import { db, demanderStockagePersistant } from '../db/schema';
-import { enregistrerCsv, lireCsv, versCsv, type RapportImport } from '../lib/csv';
+import { enregistrerCsv, lireCsv, lireFichierTexte, versCsv, type LigneRejetee, type RapportImport } from '../lib/csv';
 import { date, dateCourte, nombre } from '../lib/format';
 import { installer, useInstallation } from '../lib/installation';
 
@@ -152,6 +152,7 @@ interface Apercu {
   creeLe: string;
   objets: number;
   ventes: number;
+  souhaits: number;
 }
 
 /** Lecture rapide du fichier pour la confirmation (la vraie vérification est faite par restaurerSauvegarde). */
@@ -162,10 +163,28 @@ async function lireApercu(f: File): Promise<Apercu> {
   } catch {
     throw new Error('Ce fichier n’est pas une sauvegarde Classeur.');
   }
-  const s = brut as { app?: unknown; creeLe?: unknown; possessions?: unknown; ventes?: unknown } | null;
+  const s = brut as { app?: unknown; version?: unknown; creeLe?: unknown; possessions?: unknown; ventes?: unknown; souhaits?: unknown } | null;
+  if (s?.app === 'classeur' && typeof s.version === 'number' && s.version > 1) {
+    throw new Error('Cette sauvegarde vient d’une version plus récente de Classeur : ferme l’app et rouvre-la pour la mettre à jour, puis réessaie.');
+  }
   if (!s || s.app !== 'classeur' || !Array.isArray(s.possessions)) throw new Error('Ce fichier n’est pas une sauvegarde Classeur.');
   const objets = (s.possessions as Array<{ quantite?: unknown }>).reduce((n, p) => n + (typeof p?.quantite === 'number' ? p.quantite : 0), 0);
-  return { creeLe: typeof s.creeLe === 'string' ? s.creeLe : '', objets, ventes: Array.isArray(s.ventes) ? s.ventes.length : 0 };
+  return {
+    creeLe: typeof s.creeLe === 'string' ? s.creeLe : '',
+    objets,
+    ventes: Array.isArray(s.ventes) ? s.ventes.length : 0,
+    souhaits: Array.isArray(s.souhaits) ? s.souhaits.length : 0,
+  };
+}
+
+/** Compte-rendu d'une restauration en mode « ajouter ». */
+function texteAjout(objets: number, dejaPresents: number): string {
+  if (objets === 0) {
+    return dejaPresents > 0 ? 'Tout ce que contient ce fichier est déjà dans ta collection : rien n’a été ajouté.' : 'Ce fichier ne contient aucun objet.';
+  }
+  const ajoutes = `${pluriel(objets, 'objet')} ajouté${objets > 1 ? 's' : ''} à ta collection.`;
+  if (dejaPresents === 0) return ajoutes;
+  return `${ajoutes} ${dejaPresents > 1 ? `${nombre(dejaPresents)} autres y étaient déjà` : '1 autre y était déjà'} : pas de doublon.`;
 }
 
 function SectionSauvegarde() {
@@ -209,14 +228,11 @@ function SectionSauvegarde() {
     if (!restauration) return;
     setRestaurationEnCours(true);
     try {
-      const { objets } = await restaurerSauvegarde(restauration.fichier, mode);
+      const { objets, dejaPresents } = await restaurerSauvegarde(restauration.fichier, mode);
       setRestauration(null);
       setMessage({
         ton: 'ok',
-        texte:
-          mode === 'remplacer'
-            ? `Collection restaurée : ${pluriel(objets, 'objet')}.`
-            : `${pluriel(objets, 'objet')} ajouté${objets > 1 ? 's' : ''} à ta collection.`,
+        texte: mode === 'remplacer' ? `Collection restaurée : ${pluriel(objets, 'objet')}.` : texteAjout(objets, dejaPresents),
       });
     } catch (e) {
       setRestauration((r) => r && { ...r, erreur: texteErreur(e) });
@@ -294,6 +310,7 @@ function SectionSauvegarde() {
             <p className="mt-1 font-semibold">
               {apercu.creeLe ? `Sauvegarde du ${date(apercu.creeLe)}` : 'Sauvegarde'} : {pluriel(apercu.objets, 'objet')}
               {apercu.ventes ? `, ${pluriel(apercu.ventes, 'vente')}` : ''}
+              {apercu.souhaits ? `, ${pluriel(apercu.souhaits, 'souhait')}` : ''}
             </p>
             <fieldset className="mt-4 space-y-2">
               <legend className="mb-2 text-petit text-encre-2">Que faire de la collection de ce téléphone ?</legend>
@@ -303,7 +320,7 @@ function SectionSauvegarde() {
                 coche={mode === 'fusionner'}
                 onChange={setMode}
                 titre="Ajouter à ma collection"
-                texte="Les objets du fichier s’ajoutent à ceux déjà sur ce téléphone."
+                texte="Les objets du fichier s’ajoutent à ceux déjà sur ce téléphone, sans doublon s’il a déjà été restauré ici."
               />
               <Choix
                 nom="mode-restauration"
@@ -361,7 +378,7 @@ function SectionCsv() {
     if (!d) return;
     setMessage(null);
     try {
-      setRapport({ nom: f.name, contenu: lireCsv(await f.text(), d) });
+      setRapport({ nom: f.name, contenu: lireCsv(await lireFichierTexte(f), d) });
     } catch (e) {
       setMessage({ ton: 'erreur', texte: texteErreur(e) });
     }
@@ -478,25 +495,45 @@ function SectionCsv() {
               </div>
             </dl>
             {c.rejetees.length > 0 && (
-              <div className="mt-4">
-                <h3 className="font-semibold">Lignes non reconnues</h3>
-                <p className="text-petit text-encre-2">Elles ne seront pas ajoutées. Corrige-les dans le fichier, puis importe-le à nouveau si besoin.</p>
-                <ul className="mt-2 divide-y divide-trait rounded-xl bg-surface-2 px-3 text-petit">
-                  {c.rejetees.slice(0, 100).map((l) => (
-                    <li key={l.ligne} className="py-2">
-                      <span className="font-semibold">Ligne {l.ligne}</span> : {l.raison}
-                      <span className="block truncate text-micro text-encre-2">{l.texte}</span>
-                    </li>
-                  ))}
-                </ul>
-                {c.rejetees.length > 100 && <p className="mt-2 text-petit text-encre-2">Et {nombre(c.rejetees.length - 100)} autres.</p>}
-              </div>
+              <ListeLignes
+                titre="Lignes non reconnues"
+                texte="Elles ne seront pas ajoutées. Corrige-les dans le fichier, puis importe-le à nouveau si besoin."
+                lignes={c.rejetees}
+              />
+            )}
+            {c.aVerifier.length > 0 && (
+              <ListeLignes
+                titre="À vérifier"
+                texte="Ces lignes seront ajoutées avec la carte trouvée par l’extension et le numéro, mais le nom du fichier est différent. Si ce n’est pas la bonne carte, corrige le numéro dans le fichier."
+                lignes={c.aVerifier}
+              />
             )}
             <p className="mt-4 text-micro text-encre-2">Rien n’est effacé : les objets reconnus s’ajoutent à ta collection actuelle.</p>
           </>
         )}
       </Feuille>
     </>
+  );
+}
+
+/** Lignes du fichier à signaler (non reconnues, ou à vérifier), avec leur numéro et la raison. */
+function ListeLignes({ titre, texte, lignes }: { titre: string; texte: string; lignes: LigneRejetee[] }) {
+  return (
+    <div className="mt-4">
+      <h3 className="font-semibold">
+        {titre} ({nombre(lignes.length)})
+      </h3>
+      <p className="text-petit text-encre-2">{texte}</p>
+      <ul className="mt-2 divide-y divide-trait rounded-xl bg-surface-2 px-3 text-petit">
+        {lignes.slice(0, 100).map((l) => (
+          <li key={l.ligne} className="py-2">
+            <span className="font-semibold">Ligne {l.ligne}</span> : {l.raison}
+            <span className="block truncate text-micro text-encre-2">{l.texte}</span>
+          </li>
+        ))}
+      </ul>
+      {lignes.length > 100 && <p className="mt-2 text-petit text-encre-2">Et {nombre(lignes.length - 100)} autres.</p>}
+    </div>
   );
 }
 
@@ -600,11 +637,13 @@ function SectionDonnees() {
   const actualiser = async () => {
     setEnCours(true);
     setVerifie(null);
+    let resultat: 'ok' | 'erreur' = 'erreur';
     try {
-      await chargerDonnees(true);
+      resultat = await chargerDonnees(true);
     } finally {
       setEnCours(false);
-      setVerifie(navigator.onLine ? 'ok' : 'hors-ligne');
+      // « À jour » seulement si le serveur a vraiment répondu
+      setVerifie(resultat === 'ok' ? 'ok' : 'hors-ligne');
     }
   };
 
@@ -643,7 +682,7 @@ function SectionDonnees() {
           <Retour
             message={
               verifie === 'hors-ligne'
-                ? { ton: 'erreur', texte: 'Pas de connexion : les prix affichés restent ceux enregistrés sur le téléphone.' }
+                ? { ton: 'erreur', texte: 'Vérification impossible (pas de connexion ou serveur indisponible) : les prix affichés restent ceux enregistrés sur le téléphone.' }
                 : etat.statut === 'pret'
                   ? { ton: 'ok', texte: `À jour : prix Cardmarket du ${dateCourte(etat.donnees.meta.datePrix)}` }
                   : etat.statut === 'erreur'

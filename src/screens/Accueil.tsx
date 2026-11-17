@@ -7,6 +7,7 @@ import { Link } from 'wouter';
 import { Courbe, type Point } from '../components/Courbe';
 import { Ecran } from '../components/Ecran';
 import { Montant } from '../components/Montant';
+import { regrouperCartes } from '../components/classeur/calculs';
 import { TuileCarte } from '../components/objets/TuileCarte';
 import { filtrerPeriode, PERIODES, Segments, type Periode } from '../components/Segments';
 import { Visuel } from '../components/Visuel';
@@ -15,7 +16,7 @@ import { BandeCartes } from '../components/tableau/BandeCartes';
 import { BarreSegmentee } from '../components/tableau/BarreSegmentee';
 import { detailObjet, LigneObjet } from '../components/tableau/LigneObjet';
 import { BlocVide, couleurSens, LienBouton, Pastille, pluriel, Section, SEGMENTS_NUS, VEDETTE } from '../components/tableau/Section';
-import { useDonnees, type Carte, type Donnees } from '../data/catalogue';
+import { useDonnees, type Donnees } from '../data/catalogue';
 import { calculerBilan, calculerCourbeCollection, mouvements, objetDe, valoriser, type Bilan, type Mouvement } from '../data/valeur';
 import { usePossessions } from '../db/collection';
 import { lireReglages, useReglages, type Reglages } from '../db/reglages';
@@ -433,31 +434,24 @@ function PlusValue({ bilan, lots, r }: { bilan: Bilan; lots: Possession[]; r: Re
 // ---------- Cartes les plus chères ----------
 
 function PlusCheres({ d, lots, r }: { d: Donnees; lots: Possession[]; r: Reglages }) {
-  const cartes = useMemo(() => {
-    const parCarte = new Map<string, { carte: Carte; quantite: number; prix: number | null }>();
-    for (const l of lots) {
-      if (l.type !== 'carte') continue;
-      const o = objetDe(d, 'carte', l.ref);
-      if (o?.type !== 'carte') continue;
-      const prix = valoriser(d, l, r).unitaire;
-      const e = parCarte.get(l.ref);
-      if (!e) parCarte.set(l.ref, { carte: o.carte, quantite: l.quantite, prix });
-      else {
-        e.quantite += l.quantite;
-        if (prix != null && (e.prix == null || prix > e.prix)) e.prix = prix;
-      }
-    }
-    return [...parCarte.values()]
-      .filter((c) => c.prix != null)
-      .sort((a, b) => (b.prix ?? 0) - (a.prix ?? 0))
-      .slice(0, 9);
-  }, [d, lots, r]);
+  // Montants masqués (œil) : la vignette n'affiche plus de prix, comme dans la collection.
+  const masques = useMontantsMasques();
+  // Même calcul et même ordre que la collection triée par valeur : une pochette par carte, tous ses exemplaires
+  // (versions, états, décote comprise), avec la valeur de la pile et son « ×N ».
+  const cartes = useMemo(
+    () =>
+      [...regrouperCartes(d, lots, r).values()]
+        .filter((g) => g.valeur != null)
+        .sort((a, b) => (b.valeur ?? 0) - (a.valeur ?? 0) || a.carte.nom.localeCompare(b.carte.nom, 'fr'))
+        .slice(0, 9),
+    [d, lots, r],
+  );
   if (cartes.length === 0) return null;
   return (
     <Section titre="Mes cartes les plus chères" lien={{ href: '/collection', texte: 'Voir tout' }}>
       <div className="cascade grid grid-cols-3 gap-x-2.5 gap-y-4">
-        {cartes.map((c) => (
-          <TuileCarte key={c.carte.id} carte={c.carte} quantite={c.quantite} prix={c.prix} sousTitre="extension" />
+        {cartes.map((g) => (
+          <TuileCarte key={g.carte.id} carte={g.carte} quantite={g.quantite} prix={masques ? undefined : g.valeur} sousTitre="extension" />
         ))}
       </div>
     </Section>
@@ -582,7 +576,9 @@ function Bienvenue() {
     setErreur(null);
     try {
       // Collection vide : on ajoute le contenu du fichier sans rien effacer (souhaits déjà notés compris).
-      await restaurerSauvegarde(f, 'fusionner');
+      const { objets } = await restaurerSauvegarde(f, 'fusionner');
+      // Avec des objets, l'accueil passe tout seul au tableau de bord ; sinon, on dit ce qui s'est passé.
+      if (objets === 0) setErreur('Sauvegarde restaurée, mais elle ne contient aucun objet : ta collection reste vide.');
     } catch (e) {
       setErreur(e instanceof SyntaxError ? "Ce fichier n'est pas une sauvegarde Classeur." : e instanceof Error ? e.message : String(e));
     } finally {

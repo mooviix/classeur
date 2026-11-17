@@ -225,7 +225,11 @@ function construire(meta: FichierMeta, cat: FichierCatalogue, sc: FichierScelles
 
 let etat: EtatDonnees = { statut: 'chargement' };
 const abonnes = new Set<() => void>();
-let enCours: Promise<void> | null = null;
+let enCours: Promise<ResultatChargement> | null = null;
+let dernierChargement = 0;
+
+/** Résultat d'un (re)chargement : 'ok' (données fraîches lues), 'erreur' (serveur injoignable : on garde les données en place). */
+export type ResultatChargement = 'ok' | 'erreur';
 
 function publier(e: EtatDonnees) {
   etat = e;
@@ -233,9 +237,9 @@ function publier(e: EtatDonnees) {
 }
 
 /** Charge (ou recharge) toutes les données. Appelé automatiquement au premier usage. */
-export function chargerDonnees(forcer = false): Promise<void> {
+export function chargerDonnees(forcer = false): Promise<ResultatChargement> {
   if (enCours && !forcer) return enCours;
-  enCours = (async () => {
+  enCours = (async (): Promise<ResultatChargement> => {
     try {
       const meta = await lireJson<FichierMeta>('meta.json', { cache: 'no-cache' });
       if (meta.v !== 1) throw new Error('Format de données inconnu : mets l’app à jour.');
@@ -252,10 +256,18 @@ export function chargerDonnees(forcer = false): Promise<void> {
         // une entrée de logos.json a priorité (ex. logo FR de Poképédia plutôt que le logo EN de TCGdex)
         for (const e of donnees.extensions) if (typeof logos[e.id] === 'string') e.logo = logos[e.id];
       }
+      // Même fichier de prix qu'avant : on garde les objets en place (pas de recalcul ni de rendu inutile)
+      if (etat.statut === 'pret' && etat.donnees.meta.genereLe === meta.genereLe) {
+        dernierChargement = Date.now();
+        return 'ok';
+      }
       publier({ statut: 'pret', donnees });
+      dernierChargement = Date.now();
+      return 'ok';
     } catch (e) {
-      // Si on avait déjà des données, on les garde (rechargement raté hors ligne).
-      if (etat.statut !== 'pret') {
+      // Si on avait déjà des données, on les garde (rechargement raté hors ligne) et on le signale à l'appelant.
+      if (etat.statut === 'pret') return 'erreur';
+      {
         publier({
           statut: 'erreur',
           message:
@@ -266,9 +278,20 @@ export function chargerDonnees(forcer = false): Promise<void> {
                 : String(e),
         });
       }
+      return 'erreur';
     }
   })();
   return enCours;
+}
+
+// L'app installée reste souvent ouverte en arrière-plan : au retour au premier plan, on revérifie les prix
+// (au plus une fois par heure ; un seul petit fichier, meta.json, si rien n'a changé).
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && etat.statut === 'pret' && Date.now() - dernierChargement > 3_600_000) {
+      void chargerDonnees(true);
+    }
+  });
 }
 
 /** État des données (chargement / prêt / erreur). Déclenche le chargement au premier appel. */
