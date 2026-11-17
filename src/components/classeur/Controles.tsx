@@ -193,7 +193,7 @@ const STYLES_LIEN = {
   principal: 'bg-dos text-sur-dos active:brightness-95',
   secondaire: 'bg-surface-2 text-encre shadow-[inset_0_0_0_1px_var(--trait)] active:bg-trait/60',
   // le jaune de la bordure des cartes : réservé au scan
-  scan: 'bg-bordure text-bordure-encre active:brightness-95',
+  scan: 'bg-dos text-sur-dos active:brightness-95',
 } as const;
 
 /** Lien qui a l'air d'un bouton (navigation vers le scanner, la recherche…). */

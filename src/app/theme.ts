@@ -17,9 +17,9 @@ export function appliquerTheme(theme: Theme): void {
   const fond = getComputedStyle(racine).getPropertyValue('--pochette').trim();
   for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
     if (theme === 'auto') {
-      meta.content = meta.media.includes('dark') ? '#0E1628' : '#EDF0F3';
+      meta.content = meta.media.includes('dark') ? '#0E0F12' : '#F2F3F5';
     } else {
-      meta.content = fond || (theme === 'sombre' ? '#0E1628' : '#EDF0F3');
+      meta.content = fond || (theme === 'sombre' ? '#0E0F12' : '#F2F3F5');
     }
   }
 }

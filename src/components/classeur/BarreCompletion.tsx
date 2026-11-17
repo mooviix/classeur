@@ -25,7 +25,7 @@ export function BarreCompletion({
     >
       {valeur > 0 && (
         // au moins quelques pixels dès la première carte, pour que le début se voie
-        <div className="h-full rounded-full bg-bordure" style={{ width: `max(${(ratio * 100).toFixed(2)}%, 0.375rem)` }} />
+        <div className="h-full rounded-full bg-holo" style={{ width: `max(${(ratio * 100).toFixed(2)}%, 0.375rem)` }} />
       )}
     </div>
   );

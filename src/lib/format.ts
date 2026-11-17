@@ -14,10 +14,13 @@ const fmtNombre = new Intl.NumberFormat('fr-FR');
 
 const estNombre = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 
+/** Espace fine insécable (U+202F) → espace insécable classique : certaines polices n'ont pas le glyphe fin. */
+const espaces = (s: string) => s.replace(/\u202f/g, '\u00a0');
+
 /** « 1 284,50 € », ou « — » si pas de prix. Au-delà de 10 000 €, sans centimes. */
 export function euros(v: number | null | undefined): string {
   if (!estNombre(v)) return '—';
-  return Math.abs(v) >= 10_000 ? fmtEurosRond.format(v) : fmtEuros.format(v);
+  return espaces(Math.abs(v) >= 10_000 ? fmtEurosRond.format(v) : fmtEuros.format(v));
 }
 
 /** « +12,40 € » / « −3,10 € » (signe toujours affiché). */
@@ -30,7 +33,7 @@ export function eurosSigne(v: number | null | undefined): string {
 /** Variation relative : 0.026 → « +2,6 % ». */
 export function pourcent(ratio: number | null | undefined): string {
   if (!estNombre(ratio)) return '—';
-  return fmtPourcent.format(ratio).replace('-', '−');
+  return espaces(fmtPourcent.format(ratio).replace('-', '−'));
 }
 
 /** Variation entre deux valeurs, en ratio (null si incalculable). */
@@ -40,7 +43,7 @@ export function variation(avant: number | null | undefined, apres: number | null
 }
 
 export function nombre(v: number): string {
-  return fmtNombre.format(v);
+  return espaces(fmtNombre.format(v));
 }
 
 /** 'YYYY-MM-DD' ou ISO → « 13 nov. 2026 ». */

@@ -28,24 +28,29 @@ function LienOnglet({ onglet, chemin }: { onglet: Onglet; chemin: string }) {
     <Link
       href={onglet.href}
       aria-current={actif ? 'page' : undefined}
-      className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 pt-2 pb-1 text-micro ${
-        actif ? 'font-semibold text-dos' : 'text-encre-2'
+      className={`appui relative flex min-w-0 flex-1 flex-col items-center gap-0.5 pt-1 text-micro transition-colors ${
+        actif ? 'font-semibold text-encre' : 'font-medium text-encre-3'
       }`}
     >
-      <Icone size={22} strokeWidth={actif ? 2.4 : 1.9} aria-hidden />
+      <Icone size={22} strokeWidth={actif ? 2.2 : 1.8} aria-hidden />
       <span className="truncate">{onglet.nom}</span>
+      {/* petit point sous l'onglet actif */}
+      <span
+        aria-hidden
+        className={`absolute -bottom-1.5 size-1 rounded-full bg-encre transition-[opacity,transform] duration-300 ${
+          actif ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
+        }`}
+      />
     </Link>
   );
 }
 
+/** Barre d'onglets flottante (pilule translucide), bouton Scan au centre avec son anneau holo. */
 export function BarreOnglets() {
   const [chemin] = useLocation();
   return (
-    <nav
-      aria-label="Navigation principale"
-      className="pb-sur fixed inset-x-0 bottom-0 z-40 border-t border-trait bg-surface/95 backdrop-blur-md"
-    >
-      <div className="mx-auto flex max-w-xl items-end px-2">
+    <nav aria-label="Navigation principale" className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="ombre-flottante pointer-events-auto mx-auto flex h-16 max-w-xl items-center rounded-[1.75rem] border border-trait bg-surface/90 px-1.5 backdrop-blur-xl">
         {GAUCHE.map((o) => (
           <LienOnglet key={o.href} onglet={o} chemin={chemin} />
         ))}
@@ -53,9 +58,11 @@ export function BarreOnglets() {
           <Link
             href="/scanner"
             aria-label="Scanner une carte"
-            className="-mt-5 mb-1 flex size-16 items-center justify-center rounded-[1.1rem] bg-bordure text-bordure-encre shadow-[0_6px_16px_-6px_rgb(120_90_0/0.55)] ring-4 ring-surface transition-transform active:scale-95"
+            className="anneau-holo appui -mt-7 flex size-[3.65rem] items-center justify-center overflow-hidden rounded-full p-[2.5px] shadow-[0_10px_24px_rgb(21_23_28/0.25)]"
           >
-            <ScanLine size={30} strokeWidth={2.2} aria-hidden />
+            <span className="flex size-full items-center justify-center rounded-full bg-[#15171c] text-white">
+              <ScanLine size={26} strokeWidth={2} aria-hidden />
+            </span>
           </Link>
         </div>
         {DROITE.map((o) => (

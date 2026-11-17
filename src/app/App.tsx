@@ -27,6 +27,8 @@ function Coquille() {
     <div className="min-h-dvh">
       <main className={pleinEcran ? '' : 'pb-onglets'}>
         <Suspense fallback={<div className="min-h-dvh" aria-busy="true" />}>
+        {/* clé = chemin : chaque écran entre en fondu + léger glissé (opacité/transform uniquement) */}
+        <div key={chemin} className="entree-ecran">
         <Switch>
           <Route path="/" component={Accueil} />
           <Route path="/collection" component={Collection} />
@@ -41,6 +43,7 @@ function Coquille() {
           <Route path="/reglages" component={Reglages} />
           <Route component={Introuvable} />
         </Switch>
+        </div>
         </Suspense>
       </main>
       {!pleinEcran && <BarreOnglets />}

@@ -119,7 +119,7 @@ function Valeur({ bilan, r }: { bilan: Bilan; r: Reglages }) {
       </h2>
       {/* Chiffre-vedette : le seul de l'écran, chiffres proportionnels */}
       <p className={`mt-1 ${VEDETTE}`}>
-        <Montant valeur={bilan.valeur} />
+        <Montant valeur={bilan.valeur} anime />
       </p>
       <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1">
         {v ? (

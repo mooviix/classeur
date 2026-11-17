@@ -1,5 +1,6 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/archivo/standard.css';
+@import '@fontsource-variable/bricolage-grotesque/opsz.css';
+@import '@fontsource-variable/instrument-sans/index.css';
 
 /* « dark: » suit le thème choisi dans l'app (data-theme), sinon celui du téléphone */
 @custom-variant dark {
@@ -14,89 +15,107 @@
 }
 
 /*
-  Classeur — jetons de design
-  - pochette : le gris du plastique des pochettes de classeur (fond)
-  - encre    : le bleu nuit du dos des cartes (texte)
-  - dos      : bleu du dos des cartes (éléments actifs, liens)
-  - bordure  : le jaune de la bordure des cartes (bouton Scan, barres de complétion, rien d'autre)
-  - hausse / baisse : sens des variations de prix
-  Une seule famille, Archivo, avec sa largeur variable : large pour les montants, étroite pour numéros et codes.
+  Classeur, direction « vitrine holo » (maquettes : Claude Design, « Classeur — nouveau design »)
+  - Interface sobre : fond porcelaine, surfaces blanches, texte graphite. Les cartes sont la couleur.
+  - Holo : le dégradé des cartes holographiques, RÉSERVÉ au graphique, au bouton Scan et aux barres de complétion.
+  - Hausse / baisse : vert / rouge, toujours avec le signe.
+  - Typo : Bricolage Grotesque pour les titres et les montants, Instrument Sans pour le texte.
+  Les anciens noms de jetons sont gardés (pochette = fond, dos = action principale…) pour ne pas toucher aux écrans.
 */
 
 :root {
-  --pochette: #edf0f3;
+  --pochette: #f2f3f5;
   --surface: #ffffff;
-  --surface-2: #f6f8fa;
-  --encre: #172036;
-  --encre-2: #566079;
-  --encre-3: #8a93a6;
-  --trait: #d5dae2;
-  --dos: #2b4c9f;
-  --dos-doux: #e3e9f6;
+  --surface-2: #f7f8fa;
+  --encre: #15171c;
+  --encre-2: #5b606b;
+  --encre-3: #737885;
+  --trait: #e4e6ea;
+  --dos: #15171c;
+  --dos-doux: #eef0f3;
   --sur-dos: #ffffff;
-  --serie-1: #2b4c9f;
-  --serie-2: #b07a00;
-  --grille: #e6e9ef;
-  --bordure: #f4c430;
-  --bordure-encre: #3a2c00;
-  --hausse: #12805a;
-  --hausse-doux: #e1f3ea;
-  --baisse: #c93636;
-  --baisse-doux: #fbe6e6;
-  --ombre-pochette: inset 0 0 0 1px rgb(23 32 54 / 0.07), inset 0 1px 0 rgb(255 255 255 / 0.9);
+  --serie-1: #15171c;
+  --serie-2: #b7791f;
+  --grille: #eef0f3;
+  --bordure: #e09a2b;
+  --bordure-encre: #15171c;
+  --hausse: #138a55;
+  --hausse-doux: #e3f4eb;
+  --baisse: #c2412f;
+  --baisse-doux: #fbe9e5;
+  --holo-1: #2f9bd8;
+  --holo-2: #7a5ce6;
+  --holo-3: #d9539f;
+  --holo-4: #e09a2b;
+  --ombre-carte: 0 6px 16px rgb(21 23 28 / 0.14);
+  --ombre-flottante: 0 10px 30px rgb(21 23 28 / 0.1);
+  --ombre-pochette: inset 0 0 0 1px var(--trait);
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='clair']) {
-    --pochette: #0e1628;
-    --surface: #16213a;
-    --surface-2: #1b2846;
-    --encre: #e9edf5;
-    --encre-2: #a3aec4;
-    --encre-3: #6f7b94;
-    --trait: #2a3756;
-    --dos: #93b1ff;
-    --dos-doux: #22325a;
-    --sur-dos: #0e1628;
-    --serie-1: #6b8ff0;
-    --serie-2: #b8890c;
-    --grille: #24304d;
-    --bordure: #f4c430;
-    --bordure-encre: #3a2c00;
-    --hausse: #45cf91;
-    --hausse-doux: #133a2c;
-    --baisse: #ff7a7a;
-    --baisse-doux: #3d1d24;
-    --ombre-pochette: inset 0 0 0 1px rgb(255 255 255 / 0.06), inset 0 1px 0 rgb(255 255 255 / 0.04);
+    --pochette: #0e0f12;
+    --surface: #17181c;
+    --surface-2: #1c1f25;
+    --encre: #f1f2f4;
+    --encre-2: #a4a9b3;
+    --encre-3: #8a909b;
+    --trait: #262a31;
+    --dos: #f1f2f4;
+    --dos-doux: #22252c;
+    --sur-dos: #0e0f12;
+    --serie-1: #e6e8ec;
+    --serie-2: #d49a3c;
+    --grille: #22252c;
+    --bordure: #f5c46a;
+    --bordure-encre: #0e0f12;
+    --hausse: #4cc98a;
+    --hausse-doux: #12301f;
+    --baisse: #ff7b6b;
+    --baisse-doux: #3a1c18;
+    --holo-1: #7cc8f5;
+    --holo-2: #a795f7;
+    --holo-3: #f08acb;
+    --holo-4: #f5c46a;
+    --ombre-carte: 0 6px 18px rgb(0 0 0 / 0.45);
+    --ombre-flottante: 0 10px 30px rgb(0 0 0 / 0.5);
     color-scheme: dark;
   }
 }
 
 :root[data-theme='sombre'] {
-  --pochette: #0e1628;
-  --surface: #16213a;
-  --surface-2: #1b2846;
-  --encre: #e9edf5;
-  --encre-2: #a3aec4;
-  --encre-3: #6f7b94;
-  --trait: #2a3756;
-  --dos: #93b1ff;
-  --dos-doux: #22325a;
-  --sur-dos: #0e1628;
-  --serie-1: #6b8ff0;
-  --serie-2: #b8890c;
-  --grille: #24304d;
-  --hausse: #45cf91;
-  --hausse-doux: #133a2c;
-  --baisse: #ff7a7a;
-  --baisse-doux: #3d1d24;
-  --ombre-pochette: inset 0 0 0 1px rgb(255 255 255 / 0.06), inset 0 1px 0 rgb(255 255 255 / 0.04);
+  --pochette: #0e0f12;
+  --surface: #17181c;
+  --surface-2: #1c1f25;
+  --encre: #f1f2f4;
+  --encre-2: #a4a9b3;
+  --encre-3: #8a909b;
+  --trait: #262a31;
+  --dos: #f1f2f4;
+  --dos-doux: #22252c;
+  --sur-dos: #0e0f12;
+  --serie-1: #e6e8ec;
+  --serie-2: #d49a3c;
+  --grille: #22252c;
+  --bordure: #f5c46a;
+  --bordure-encre: #0e0f12;
+  --hausse: #4cc98a;
+  --hausse-doux: #12301f;
+  --baisse: #ff7b6b;
+  --baisse-doux: #3a1c18;
+  --holo-1: #7cc8f5;
+  --holo-2: #a795f7;
+  --holo-3: #f08acb;
+  --holo-4: #f5c46a;
+  --ombre-carte: 0 6px 18px rgb(0 0 0 / 0.45);
+  --ombre-flottante: 0 10px 30px rgb(0 0 0 / 0.5);
   color-scheme: dark;
 }
 
 @theme inline {
-  --font-sans: 'Archivo Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans: 'Instrument Sans Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-titre: 'Bricolage Grotesque Variable', 'Instrument Sans Variable', ui-sans-serif, system-ui, sans-serif;
 
   --color-pochette: var(--pochette);
   --color-surface: var(--surface);
@@ -118,24 +137,26 @@
   --color-baisse: var(--baisse);
   --color-baisse-doux: var(--baisse-doux);
 
-  /* Échelle typographique (base 16 px, ratio ~1,25) */
+  /* Échelle typographique (base 16 px) */
   --text-micro: 0.6875rem;
   --text-micro--line-height: 1rem;
   --text-petit: 0.8125rem;
-  --text-petit--line-height: 1.125rem;
-  --text-corps: 1rem;
+  --text-petit--line-height: 1.15rem;
+  --text-corps: 0.9375rem;
   --text-corps--line-height: 1.4rem;
-  --text-titre: 1.25rem;
-  --text-titre--line-height: 1.6rem;
+  --text-titre: 1.375rem;
+  --text-titre--line-height: 1.7rem;
   --text-grand: 1.75rem;
   --text-grand--line-height: 2rem;
-  --text-montant: 2.5rem;
-  --text-montant--line-height: 2.6rem;
+  --text-montant: 2.875rem;
+  --text-montant--line-height: 3rem;
 
-  --radius-pochette: 0.625rem;
-  --radius-feuille: 1.25rem;
+  --radius-pochette: 0.375rem;
+  --radius-feuille: 1.75rem;
+  --radius-bloc: 1.5rem;
 
   --ease-ressort: cubic-bezier(0.2, 0.9, 0.25, 1.15);
+  --ease-douce: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @layer base {
@@ -146,8 +167,13 @@
   }
   body {
     @apply bg-pochette text-encre font-sans antialiased;
-    font-feature-settings: 'tnum' 0;
     overscroll-behavior-y: none;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-titre);
+    letter-spacing: -0.012em;
   }
   /* iOS zoome si un champ fait moins de 16 px */
   input,
@@ -156,7 +182,7 @@
     font-size: max(16px, 1em);
   }
   :focus-visible {
-    outline: 2px solid var(--dos);
+    outline: 2px solid var(--encre);
     outline-offset: 2px;
   }
   @media (prefers-reduced-motion: reduce) {
@@ -165,31 +191,36 @@
     *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
+      animation-delay: 0ms !important;
       transition-duration: 0.01ms !important;
     }
   }
 }
 
 @layer utilities {
-  /* Chiffres alignés pour tous les montants */
+  /* Chiffres alignés pour les colonnes de montants */
   .chiffres {
     font-variant-numeric: tabular-nums;
   }
-  /* Largeurs d'Archivo */
+  /* Anciennes largeurs d'Archivo → rôles typographiques de la nouvelle direction */
   .large {
-    font-stretch: 125%;
+    font-family: var(--font-titre);
+    letter-spacing: -0.028em;
   }
   .semi-large {
-    font-stretch: 112%;
+    font-family: var(--font-titre);
+    letter-spacing: -0.012em;
   }
-  .etroit {
-    font-stretch: 75%;
-  }
+  .etroit,
   .tres-etroit {
-    font-stretch: 62%;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+  }
+  .font-titre {
+    font-family: var(--font-titre);
   }
   .pb-onglets {
-    padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
+    padding-bottom: calc(6.25rem + env(safe-area-inset-bottom));
   }
   .pt-sur {
     padding-top: env(safe-area-inset-top);
@@ -197,11 +228,17 @@
   .pb-sur {
     padding-bottom: env(safe-area-inset-bottom);
   }
-  /* Pochette de classeur : creux léger, pas d'ombre portée */
+  /* Bloc : surface blanche à filet, coins généreux (remplace les anciennes pochettes en creux) */
+  .bloc {
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--trait);
+    border-radius: var(--radius-bloc);
+  }
+  /* Pochette : emplacement d'une carte ou d'un visuel */
   .pochette {
     background: var(--surface-2);
     box-shadow: var(--ombre-pochette);
-    border-radius: var(--radius-pochette);
+    border-radius: 0.875rem;
   }
   /* Coins d'une vraie carte : ~4,7 % de la largeur (63 × 88 mm, coins de 3 mm) */
   .coins-carte {
@@ -210,11 +247,120 @@
   .format-carte {
     aspect-ratio: 63 / 88;
   }
+  .ombre-carte {
+    box-shadow: var(--ombre-carte);
+  }
+  .ombre-flottante {
+    box-shadow: var(--ombre-flottante);
+  }
+  /* Le dégradé holo, réservé au graphique, au Scan et aux barres de complétion */
+  .bg-holo {
+    background-image: linear-gradient(90deg, var(--holo-1), var(--holo-2), var(--holo-3), var(--holo-4));
+  }
+  .texte-holo {
+    background-image: linear-gradient(90deg, var(--holo-1), var(--holo-2), var(--holo-3), var(--holo-4));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
   .sans-barre {
     scrollbar-width: none;
   }
   .sans-barre::-webkit-scrollbar {
     display: none;
+  }
+  /* Retour au toucher : léger enfoncement (transform uniquement) */
+  .appui {
+    transition: transform 0.18s var(--ease-douce);
+  }
+  .appui:active {
+    transform: scale(0.97);
+  }
+}
+
+/* ---------- Mouvement (opacité et transformations uniquement) ---------- */
+
+/* Entrée d'un écran : fondu + léger glissé */
+.entree-ecran {
+  animation: ecran-entre 0.26s var(--ease-douce) both;
+}
+@keyframes ecran-entre {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Cascade : les enfants apparaissent l'un après l'autre (12 premiers seulement, le reste tout de suite) */
+.cascade > * {
+  animation: apparait 0.38s var(--ease-douce) both;
+}
+.cascade > :nth-child(2) { animation-delay: 30ms; }
+.cascade > :nth-child(3) { animation-delay: 60ms; }
+.cascade > :nth-child(4) { animation-delay: 90ms; }
+.cascade > :nth-child(5) { animation-delay: 120ms; }
+.cascade > :nth-child(6) { animation-delay: 150ms; }
+.cascade > :nth-child(7) { animation-delay: 180ms; }
+.cascade > :nth-child(8) { animation-delay: 210ms; }
+.cascade > :nth-child(9) { animation-delay: 240ms; }
+.cascade > :nth-child(10) { animation-delay: 270ms; }
+.cascade > :nth-child(11) { animation-delay: 300ms; }
+.cascade > :nth-child(12) { animation-delay: 330ms; }
+.cascade > :nth-child(n + 13) { animation: none; }
+@keyframes apparait {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+}
+
+/* Image qui se dévoile une fois chargée */
+.img-revele {
+  opacity: 0;
+  transition: opacity 0.35s ease-out;
+}
+.img-revele[data-chargee='1'] {
+  opacity: 1;
+}
+
+/* Anneau holo qui tourne lentement autour du bouton Scan */
+.anneau-holo {
+  position: relative;
+  isolation: isolate;
+}
+.anneau-holo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: conic-gradient(from 0deg, var(--holo-1), var(--holo-2), var(--holo-3), var(--holo-4), var(--holo-1));
+  z-index: -1;
+  animation: tourne 7s linear infinite;
+}
+@keyframes tourne {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Courbe : le trait se dessine (pathLength = 1) puis l'aire apparaît */
+/* État de base visible : si l'animation ne tourne pas, le trait reste affiché */
+.courbe-trait {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: dessine 0.75s var(--ease-douce) backwards;
+}
+.courbe-aire {
+  animation: fondu 0.5s ease-out 0.35s backwards;
+}
+@keyframes dessine {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+@keyframes fondu {
+  from {
+    opacity: 0;
   }
 }
 
@@ -225,7 +371,7 @@ dialog.feuille {
   inset-block-end: 0;
 }
 dialog.feuille[open] > div {
-  animation: feuille-monte 0.32s var(--ease-ressort);
+  animation: feuille-monte 0.34s var(--ease-ressort);
 }
 dialog.feuille::backdrop {
   animation: feuille-fond 0.2s ease-out;

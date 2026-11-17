@@ -25,13 +25,13 @@ export function Ecran({ titre, sousTitre, retour, actions, barre, children }: Pr
               type="button"
               onClick={() => history.back()}
               aria-label="Retour"
-              className="-ml-2 flex size-10 shrink-0 items-center justify-center rounded-full text-encre active:bg-surface-2"
+              className="appui mr-2 flex size-10 shrink-0 items-center justify-center rounded-full border border-trait bg-surface text-encre"
             >
               <ChevronLeft size={26} aria-hidden />
             </button>
           )}
           <div className="min-w-0 flex-1">
-            <h1 className="semi-large truncate text-titre font-extrabold tracking-tight">{titre}</h1>
+            <h1 className="semi-large truncate text-titre font-bold">{titre}</h1>
             {sousTitre && <p className="truncate text-petit text-encre-2">{sousTitre}</p>}
           </div>
           {actions && <div className="flex shrink-0 items-center gap-1">{actions}</div>}
@@ -59,7 +59,7 @@ export function BoutonIcone({
       aria-label={label}
       title={label}
       onClick={onClick}
-      className="flex size-10 items-center justify-center rounded-full text-encre active:bg-surface-2"
+      className="appui flex size-10 items-center justify-center rounded-full border border-trait bg-surface text-encre"
     >
       {children}
     </button>

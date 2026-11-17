@@ -40,7 +40,7 @@ const STYLES: Record<Genre, string> = {
   principal: 'bg-dos text-sur-dos active:brightness-95',
   secondaire: 'bg-surface-2 text-encre shadow-[inset_0_0_0_1px_var(--trait)] active:bg-trait/60',
   // Le jaune de la bordure des cartes est réservé au scan.
-  scan: 'bg-bordure text-bordure-encre active:brightness-95',
+  scan: 'bg-dos text-sur-dos active:brightness-95',
 };
 
 /** Lien qui a l'allure d'un bouton (navigation vers un écran). */
@@ -76,8 +76,7 @@ export function LienBouton({
  * réécrit font-stretch en font-width, inconnu de Safari) : mesuré, « −9 999,99 € » et « 1 234 567 € »
  * tiennent alors sur un écran de 320 px.
  */
-export const VEDETTE =
-  "semi-large max-[359px]:[font-variation-settings:'wdth'_100] text-[clamp(3rem,14.5vw,3.25rem)] leading-none font-extrabold tracking-tight whitespace-nowrap";
+export const VEDETTE = 'large text-[clamp(2.4rem,11.8vw,3rem)] leading-none font-bold whitespace-nowrap';
 
 /** « 1 carte », « 248 cartes », « 1 248 objets ». */
 export function pluriel(n: number, singulier: string, pluriel = `${singulier}s`): string {

@@ -21,11 +21,18 @@ interface Props {
  */
 export function Visuel({ src, alt, forme = 'carte', vide, repli, className = '', prioritaire }: Props) {
   const [erreur, setErreur] = useState(false);
+  const [chargee, setChargee] = useState(false);
   const afficherImage = !vide && !!src && !erreur;
-  const cadre = forme === 'carte' ? 'format-carte coins-carte' : 'aspect-square rounded-pochette';
+  const cadre = forme === 'carte' ? 'format-carte coins-carte' : 'aspect-square rounded-2xl';
+  // Carte présente : ombre portée douce. Pochette vide : creux en pointillés.
+  const fond = vide
+    ? 'bg-surface-2 border-[1.5px] border-dashed border-trait'
+    : afficherImage && forme === 'carte'
+      ? `bg-surface-2 ${chargee ? 'ombre-carte' : ''}`
+      : 'pochette';
 
   return (
-    <div className={`pochette relative overflow-hidden ${cadre} ${className}`}>
+    <div className={`relative overflow-hidden transition-shadow duration-300 ${fond} ${cadre} ${className}`}>
       {afficherImage ? (
         <img
           src={src}
@@ -34,15 +41,19 @@ export function Visuel({ src, alt, forme = 'carte', vide, repli, className = '',
           decoding="async"
           draggable={false}
           onError={() => setErreur(true)}
-          className={`absolute inset-0 size-full ${forme === 'carte' ? 'object-cover' : 'object-contain p-1.5'}`}
+          onLoad={() => setChargee(true)}
+          ref={(img) => {
+            // image déjà en cache : onLoad peut ne pas se déclencher
+            if (img?.complete && img.naturalWidth > 0 && !chargee) setChargee(true);
+          }}
+          data-chargee={chargee ? '1' : '0'}
+          className={`img-revele absolute inset-0 size-full ${forme === 'carte' ? 'object-cover' : 'object-contain p-1.5'}`}
         />
       ) : (
         <div
           aria-label={alt}
           role="img"
-          className={`absolute inset-0 flex items-center justify-center ${
-            vide ? 'border border-dashed border-trait' : ''
-          } ${forme === 'carte' ? 'coins-carte' : 'rounded-pochette'}`}
+          className={`absolute inset-0 flex items-center justify-center ${forme === 'carte' ? 'coins-carte' : 'rounded-2xl'}`}
         >
           {repli && (
             <span className="etroit chiffres line-clamp-3 px-1.5 text-center text-micro leading-tight font-semibold break-words text-encre-3">
@@ -51,11 +62,6 @@ export function Visuel({ src, alt, forme = 'carte', vide, repli, className = '',
           )}
         </div>
       )}
-      {/* reflet de la pochette plastique, très léger */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[linear-gradient(115deg,rgb(255_255_255/0.16)_0%,rgb(255_255_255/0)_38%)]"
-      />
     </div>
   );
 }

@@ -15,7 +15,7 @@ export function Segments<T extends string>({
   // 4 options et plus sur un téléphone : texte un cran plus petit pour que les libellés tiennent (« Possédées »…)
   const serre = options.length >= 4;
   return (
-    <div role="radiogroup" aria-label={label} className="flex rounded-xl bg-surface-2 p-1 shadow-[inset_0_0_0_1px_var(--trait)]">
+    <div role="radiogroup" aria-label={label} className="flex rounded-full border border-trait bg-surface p-1">
       {options.map((o) => {
         const actif = o.id === valeur;
         return (
@@ -25,9 +25,9 @@ export function Segments<T extends string>({
             role="radio"
             aria-checked={actif}
             onClick={() => onChange(o.id)}
-            className={`min-w-0 flex-1 truncate rounded-lg font-semibold transition-colors ${
-              taille === 'petit' ? 'min-h-8 px-1.5 text-petit' : serre ? 'min-h-10 px-1 text-petit' : 'min-h-10 px-2'
-            } ${actif ? 'bg-surface text-encre shadow-[0_1px_3px_rgb(0_0_0/0.12)]' : 'text-encre-2'}`}
+            className={`min-w-0 flex-1 truncate rounded-full font-semibold transition-[background-color,color] duration-200 ${
+              taille === 'petit' ? 'min-h-8 px-1.5 text-petit' : serre ? 'min-h-9 px-1 text-petit' : 'min-h-9 px-2 text-petit'
+            } ${actif ? 'bg-encre text-pochette' : 'text-encre-2'}`}
           >
             {o.nom}
           </button>

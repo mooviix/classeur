@@ -15,7 +15,7 @@ interface Props {
   format?: (v: number) => string;
   /** Pendant un rechargement : on garde l'ancien tracé, atténué (pas de squelette, pas de saut). */
   chargement?: boolean;
-  /** Couleur de la série (variable CSS). Par défaut la série 1. */
+  /** Couleur de la série (variable CSS). Par défaut le dégradé holo. */
   couleur?: string;
 }
 
@@ -41,15 +41,18 @@ function etiquetteAxe(v: number): string {
 }
 
 /**
- * Courbe d'une seule série (aire légère + ligne 2 px), avec réticule au doigt / à la souris / au clavier.
+ * Courbe d'une seule série : trait holo qui se dessine, aire en fondu coloré, réticule au doigt / à la souris / au clavier.
  * Une seule série → pas de légende : le titre de la carte qui l'entoure dit ce qui est tracé.
  */
-export function Courbe({ points, libelle, hauteur = 180, format = euros, chargement, couleur = 'var(--serie-1)' }: Props) {
+export function Courbe({ points, libelle, hauteur = 180, format = euros, chargement, couleur }: Props) {
   const conteneur = useRef<HTMLDivElement>(null);
   const [largeur, setLargeur] = useState(320);
   const [survol, setSurvol] = useState<number | null>(null);
   const [tableau, setTableau] = useState(false);
-  const idDegrade = useId();
+  const id = useId().replace(/:/g, '');
+  const idHolo = `holo-${id}`;
+  const idFondu = `fondu-${id}`;
+  const idMasque = `masque-${id}`;
 
   useEffect(() => {
     const el = conteneur.current;
@@ -135,7 +138,7 @@ export function Courbe({ points, libelle, hauteur = 180, format = euros, chargem
         role="img"
         aria-label={`${libelle} : ${format(dernier.p.v)} au ${dateCourte(dernier.p.d)}`}
         tabIndex={0}
-        className="block touch-pan-y select-none outline-none focus-visible:outline-2 focus-visible:outline-dos"
+        className="block touch-pan-y select-none outline-none focus-visible:outline-2 focus-visible:outline-encre"
         onPointerDown={pointerVersIndex}
         onPointerMove={pointerVersIndex}
         onPointerLeave={(e) => e.pointerType === 'mouse' && setSurvol(null)}
@@ -144,10 +147,19 @@ export function Courbe({ points, libelle, hauteur = 180, format = euros, chargem
         onBlur={() => setSurvol(null)}
       >
         <defs>
-          <linearGradient id={idDegrade} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={couleur} stopOpacity={0.14} />
-            <stop offset="100%" stopColor={couleur} stopOpacity={0.04} />
+          <linearGradient id={idHolo} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor={couleur ?? 'var(--holo-1)'} />
+            <stop offset="0.38" stopColor={couleur ?? 'var(--holo-2)'} />
+            <stop offset="0.7" stopColor={couleur ?? 'var(--holo-3)'} />
+            <stop offset="1" stopColor={couleur ?? 'var(--holo-4)'} />
           </linearGradient>
+          <linearGradient id={idFondu} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#fff" stopOpacity={0.24} />
+            <stop offset="1" stopColor="#fff" stopOpacity={0} />
+          </linearGradient>
+          <mask id={idMasque}>
+            <rect x="0" y="0" width={largeur} height={hauteur} fill={`url(#${idFondu})`} />
+          </mask>
         </defs>
         {/* Grille : filets pleins, discrets */}
         {ticks.map((t) => (
@@ -164,25 +176,39 @@ export function Courbe({ points, libelle, hauteur = 180, format = euros, chargem
         <text x={largeur - MARGE.droite} y={hauteur - 4} textAnchor="end" className="fill-encre-3 text-[10px]">
           {dateCourte(dernier.p.d)}
         </text>
-        {aire && <path d={aire} fill={`url(#${idDegrade})`} />}
-        <path d={ligne} fill="none" stroke={couleur} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-        {/* Point final : 8 px, anneau de la couleur du fond */}
-        {!actif && <circle cx={dernier.x} cy={dernier.y} r={4} fill={couleur} stroke="var(--surface)" strokeWidth={2} />}
+        {/* La clé change avec la période : le trait se redessine à chaque changement */}
+        <g key={`${coords[0].p.d}-${dernier.p.d}-${coords.length}`}>
+          {aire && <path className="courbe-aire" d={aire} fill={`url(#${idHolo})`} mask={`url(#${idMasque})`} />}
+          <path
+            className="courbe-trait"
+            d={ligne}
+            pathLength={1}
+            fill="none"
+            stroke={`url(#${idHolo})`}
+            strokeWidth={2.5}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        </g>
+        {/* Point final : anneau de la couleur du fond */}
+        {!actif && (
+          <circle cx={dernier.x} cy={dernier.y} r={5} fill={couleur ?? 'var(--holo-4)'} stroke="var(--surface)" strokeWidth={2.5} className="courbe-aire" />
+        )}
         {actif && (
           <g>
-            <line x1={actif.x} x2={actif.x} y1={MARGE.haut} y2={bas} stroke="var(--encre-3)" strokeWidth={1} />
-            <circle cx={actif.x} cy={actif.y} r={5} fill={couleur} stroke="var(--surface)" strokeWidth={2} />
+            <line x1={actif.x} x2={actif.x} y1={MARGE.haut} y2={bas} stroke="var(--encre-3)" strokeWidth={1} strokeDasharray="3 3" />
+            <circle cx={actif.x} cy={actif.y} r={5.5} fill="var(--surface)" stroke={couleur ?? 'var(--holo-2)'} strokeWidth={3} />
           </g>
         )}
       </svg>
       {actif && (
         <div
           aria-live="polite"
-          className="pointer-events-none absolute top-0 rounded-lg bg-surface px-2 py-1 text-center shadow-[0_4px_14px_-6px_rgb(0_0_0/0.35),inset_0_0_0_1px_var(--trait)]"
+          className="pointer-events-none absolute top-0 rounded-xl bg-encre px-2.5 py-1.5 text-center text-pochette shadow-[0_8px_20px_-8px_rgb(0_0_0/0.45)]"
           style={{ left: bulleX, width: bulleLargeur }}
         >
           <div className="chiffres text-petit font-bold">{format(actif.p.v)}</div>
-          <div className="text-micro text-encre-2">{dateCourte(actif.p.d)}</div>
+          <div className="text-micro opacity-70">{dateCourte(actif.p.d)}</div>
         </div>
       )}
       <button

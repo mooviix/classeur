@@ -564,7 +564,7 @@ export function Scanner() {
             {occupe ? (
               <LoaderCircle size={34} className="animate-spin text-white" aria-hidden />
             ) : (
-              <span className="size-15 rounded-full bg-bordure transition-transform duration-100 group-active:scale-90" />
+              <span className="size-15 rounded-full bg-white transition-transform duration-100 group-active:scale-90" />
             )}
           </button>
           <BoutonBas label="Ajout rapide" actif={reglages.ajoutRapide} onClick={basculerRapide} pressed={reglages.ajoutRapide}>
@@ -615,7 +615,7 @@ function BoutonRond({ label, onClick, actif, children }: { label: string; onClic
       onClick={onClick}
       aria-pressed={actif}
       className={`flex size-11 shrink-0 items-center justify-center rounded-full backdrop-blur-sm active:opacity-70 ${
-        actif ? 'bg-bordure text-bordure-encre' : 'bg-black/35 text-white'
+        actif ? 'bg-white text-[#15171C]' : 'bg-black/35 text-white'
       }`}
     >
       {children}
@@ -647,7 +647,7 @@ function BoutonBas({
       className="flex min-h-14 flex-col items-center justify-center gap-1 justify-self-center rounded-xl px-2 text-micro font-semibold active:opacity-70 disabled:opacity-45"
     >
       <span
-        className={`flex size-11 items-center justify-center rounded-full ${actif ? 'bg-bordure text-bordure-encre' : 'bg-white/15 text-white'}`}
+        className={`flex size-11 items-center justify-center rounded-full ${actif ? 'bg-white text-[#15171C]' : 'bg-white/15 text-white'}`}
       >
         {children}
       </span>

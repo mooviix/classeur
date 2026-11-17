@@ -58,7 +58,7 @@ export function TuileCarte({ carte, quantite = 0, prix, manquante = 'vide', onPl
         onPointerLeave={finAppui}
         onPointerCancel={finAppui}
         onContextMenu={(e) => onAppuiLong && e.preventDefault()}
-        className="block w-full text-left select-none [-webkit-touch-callout:none]"
+        className="appui block w-full text-left select-none [-webkit-touch-callout:none]"
         aria-label={`${carte.nom}, ${carte.ext.nom} ${carte.num}${possedee ? `, possédée ×${quantite}` : ''}`}
       >
         <div className={!possedee && manquante === 'transparente' ? 'opacity-35 grayscale-[0.4]' : ''}>
@@ -71,11 +71,11 @@ export function TuileCarte({ carte, quantite = 0, prix, manquante = 'vide', onPl
           />
         </div>
         {possedee && (
-          <span className="chiffres absolute top-1 right-1 rounded-md bg-encre/85 px-1.5 text-micro font-bold text-pochette">
+          <span className="chiffres absolute top-1.5 right-1.5 rounded-full bg-[#15171c]/85 px-1.5 text-micro font-bold text-white backdrop-blur-sm">
             ×{quantite}
           </span>
         )}
-        <span className="mt-1 block truncate text-petit leading-tight font-semibold">{carte.nom}</span>
+        <span className="mt-1.5 block truncate text-petit leading-tight font-semibold">{carte.nom}</span>
         <span className="flex items-baseline justify-between gap-1">
           <span className="etroit truncate text-micro text-encre-2">
             {sousTitre === 'numero' ? `${carte.num}/${carte.ext.officiel}` : carte.ext.nom}
@@ -93,7 +93,7 @@ export function TuileCarte({ carte, quantite = 0, prix, manquante = 'vide', onPl
               type="button"
               aria-label={`Retirer un exemplaire de ${carte.nom}`}
               onClick={onMoins}
-              className="pointer-events-auto flex size-7 items-center justify-center rounded-full bg-surface/95 text-encre shadow-[0_1px_4px_rgb(0_0_0/0.25)] active:scale-95"
+              className="pointer-events-auto flex size-7 items-center justify-center rounded-full border border-trait bg-surface/95 text-encre shadow-[0_2px_6px_rgb(0_0_0/0.12)] backdrop-blur-sm active:scale-90"
             >
               <Minus size={15} strokeWidth={2.6} aria-hidden />
             </button>
@@ -108,7 +108,7 @@ export function TuileCarte({ carte, quantite = 0, prix, manquante = 'vide', onPl
                 navigator.vibrate?.(8);
                 onPlus();
               }}
-              className="pointer-events-auto flex size-7 items-center justify-center rounded-full bg-dos text-sur-dos shadow-[0_1px_4px_rgb(0_0_0/0.25)] active:scale-95"
+              className="pointer-events-auto flex size-7 items-center justify-center rounded-full border border-trait bg-surface/95 text-encre shadow-[0_2px_6px_rgb(0_0_0/0.12)] backdrop-blur-sm active:scale-90"
             >
               <Plus size={15} strokeWidth={2.6} aria-hidden />
             </button>
