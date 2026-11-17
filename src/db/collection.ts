@@ -33,7 +33,8 @@ export async function ajouterLot(lot: NouveauLot, options: { memoriserPrix?: boo
     const identique = existants.find((e) => memeLot(e, lot));
     if (lot.prixAchat != null && options.memoriserPrix !== false) await db.reglages.put({ cle: 'dernier-prix-achat', valeur: lot.prixAchat });
     if (identique?.id != null) {
-      await db.possessions.update(identique.id, { quantite: identique.quantite + lot.quantite, modifieLe: maintenant() });
+      // un exemplaire de plus compte comme un ajout récent (tri « Ajout récent », « Derniers ajouts » de l'accueil)
+      await db.possessions.update(identique.id, { quantite: identique.quantite + lot.quantite, ajouteLe: maintenant(), modifieLe: maintenant() });
       return identique.id;
     }
     return (await db.possessions.add({ ...lot, ajouteLe: maintenant(), modifieLe: maintenant() })) as number;
@@ -140,13 +141,16 @@ export function beneficeVente(v: Vente): number | null {
 // --- Souhaits ---
 
 export async function basculerSouhait(type: TypeObjet, ref: string, variante?: Souhait['variante']): Promise<boolean> {
-  const existant = await db.souhaits.where('[type+ref]').equals([type, ref]).first();
-  if (existant?.id != null) {
-    await db.souhaits.delete(existant.id);
-    return false;
-  }
-  await db.souhaits.add({ type, ref, variante, ajouteLe: maintenant() });
-  return true;
+  // Transaction en écriture : deux taps rapides ne créent pas deux souhaits
+  return db.transaction('rw', db.souhaits, async () => {
+    const existants = await db.souhaits.where('[type+ref]').equals([type, ref]).toArray();
+    if (existants.length > 0) {
+      await db.souhaits.bulkDelete(existants.map((e) => e.id!).filter((id) => id != null));
+      return false;
+    }
+    await db.souhaits.add({ type, ref, variante, ajouteLe: maintenant() });
+    return true;
+  });
 }
 
 // --- Lectures en direct (se mettent à jour toutes seules) ---

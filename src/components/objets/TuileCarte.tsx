@@ -4,6 +4,7 @@ import { useLocation } from 'wouter';
 import { imageCarte, type Carte } from '../../data/catalogue';
 import { euros } from '../../lib/format';
 import { Visuel } from '../Visuel';
+import { numeroCarte } from '../fiche/outils';
 
 interface Props {
   carte: Carte;
@@ -78,7 +79,7 @@ export function TuileCarte({ carte, quantite = 0, prix, manquante = 'vide', onPl
         <span className="mt-1.5 block truncate text-petit leading-tight font-semibold">{carte.nom}</span>
         <span className="flex items-baseline justify-between gap-1">
           <span className="etroit truncate text-micro text-encre-2">
-            {sousTitre === 'numero' ? `${carte.num}/${carte.ext.officiel}` : carte.ext.nom}
+            {sousTitre === 'numero' ? numeroCarte(carte.num, carte.ext.officiel) : carte.ext.nom}
           </span>
           {prix !== undefined && (
             <span className="chiffres shrink-0 text-micro font-semibold text-encre">{prix == null ? '—' : euros(prix)}</span>
@@ -93,7 +94,7 @@ export function TuileCarte({ carte, quantite = 0, prix, manquante = 'vide', onPl
               type="button"
               aria-label={`Retirer un exemplaire de ${carte.nom}`}
               onClick={onMoins}
-              className="pointer-events-auto flex size-7 items-center justify-center rounded-full border border-trait bg-surface/95 text-encre shadow-[0_2px_6px_rgb(0_0_0/0.12)] backdrop-blur-sm active:scale-90"
+              className="pointer-events-auto relative flex size-7 items-center justify-center rounded-full border border-trait bg-surface/95 text-encre shadow-[0_2px_6px_rgb(0_0_0/0.12)] backdrop-blur-sm after:absolute after:-inset-2 after:content-[''] active:scale-90"
             >
               <Minus size={15} strokeWidth={2.6} aria-hidden />
             </button>
@@ -108,7 +109,7 @@ export function TuileCarte({ carte, quantite = 0, prix, manquante = 'vide', onPl
                 navigator.vibrate?.(8);
                 onPlus();
               }}
-              className="pointer-events-auto flex size-7 items-center justify-center rounded-full border border-trait bg-surface/95 text-encre shadow-[0_2px_6px_rgb(0_0_0/0.12)] backdrop-blur-sm active:scale-90"
+              className="pointer-events-auto relative flex size-7 items-center justify-center rounded-full border border-trait bg-surface/95 text-encre shadow-[0_2px_6px_rgb(0_0_0/0.12)] backdrop-blur-sm after:absolute after:-inset-2 after:content-[''] active:scale-90"
             >
               <Plus size={15} strokeWidth={2.6} aria-hidden />
             </button>
