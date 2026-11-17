@@ -74,6 +74,13 @@ jobs:
             echo "Pas encore de branche donnees : premier passage."
           fi
 
+      - name: Restaurer le cache des empreintes du scanner (gardé dans la branche donnees)
+        run: |
+          if [ -d public/data/_cache-scan ]; then
+            mkdir -p .cache/scan && cp public/data/_cache-scan/* .cache/scan/
+            echo "Cache des empreintes restauré : $(ls public/data/_cache-scan | tr '\n' ' ')"
+          fi
+
       - name: Construire les données
         id: donnees
         run: node scripts/donnees/construire.ts ${{ inputs.forcer && '--forcer' || '' }}
@@ -99,6 +106,12 @@ jobs:
         # Script d'un autre module : s'il échoue, on publie quand même (les empreintes précédentes restent valables).
         continue-on-error: true
         run: if [ -f scripts/scan/construire.ts ]; then npm ci --no-audit --no-fund && node scripts/scan/construire.ts; fi
+
+      - name: Garder le cache des empreintes avec l'état (seules les nouvelles cartes seront calculées la prochaine fois)
+        if: steps.decision.outputs.deployer == 'true'
+        run: |
+          mkdir -p public/data/_cache-scan
+          cp .cache/scan/descripteurs-*.json .cache/scan/urls-base.json public/data/_cache-scan/ 2>/dev/null || true
 
       - name: Champ « scan » de meta.json (d'après data/scan/manifeste.json)
         if: steps.decision.outputs.deployer == 'true'
@@ -154,6 +167,7 @@ jobs:
           rm -rf dist/data
           cp -R public/data dist/data
           rm -f dist/data/.gitkeep
+          rm -rf dist/data/_cache-scan
           echo "Site : $(du -sh dist | cut -f1) dont données $(du -sh dist/data | cut -f1)"
 
       - name: Préparer l'artefact GitHub Pages
