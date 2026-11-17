@@ -46,7 +46,8 @@ export function GraphiquePrix({ groupe, cm, holo = false, libelle }: Props) {
     return (
       <section aria-label="Évolution de la cote" className="bloc px-4 py-3.5 text-petit">
         <p className="font-semibold">Pas encore d’historique</p>
-        <p className="mt-1 text-encre-2">La courbe se remplit chaque jour avec la cote Cardmarket de cette version.</p>
+        {/* phrase commune aux cartes (une version) et aux scellés (un produit) */}
+        <p className="mt-1 text-encre-2">La courbe se remplit chaque jour avec la cote Cardmarket du jour.</p>
       </section>
     );
   }

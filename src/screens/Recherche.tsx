@@ -11,6 +11,7 @@ import { Vide } from '../components/Vide';
 import { EtatCatalogue } from '../components/fiche/EtatCatalogue';
 import { LogoExtension } from '../components/fiche/LogoExtension';
 import { TitreSection } from '../components/fiche/Elements';
+import { INTENTION_RECHERCHE } from '../components/fiche/outils';
 import { chercherEnFond, preparerRecherche } from '../components/fiche/rechercheFond';
 import { FeuilleAjout } from '../components/objets/FeuilleAjout';
 import { LigneScelle } from '../components/objets/LigneScelle';
@@ -30,6 +31,12 @@ const EXEMPLES = ['Dracaufeu', 'Pikachu', '25/102', 'MEW 199', 'Évoli', 'Mewtwo
 const memoire = {
   saisie: '',
   onglet: 'cartes' as Onglet,
+  /** L'onglet a été choisi à la main pour la recherche en cours : la bascule automatique n'y touche plus. */
+  choixManuel: false,
+  /** Requête pour laquelle l'onglet a déjà été choisi automatiquement (pas de nouveau choix au retour d'une fiche). */
+  ongletChoisiPour: '',
+  /** Écran qui a laissé cet état : la recherche générale, ou celle des scellés (/recherche/scelles). */
+  ecran: 'recherche' as 'recherche' | 'scelles',
   type: null as string | null,
   ext: '',
   /** Résultats affichés pour la requête en cours */
@@ -74,19 +81,65 @@ function useRetarde<T>(valeur: T, ms: number): T {
   return v;
 }
 
-/** Mots qui désignent un produit scellé : la recherche bascule d'elle-même sur l'onglet Scellés. */
+/** Mots qui désignent un produit scellé : la recherche montre d'elle-même l'onglet Scellés. */
 const MOTS_SCELLES =
-  /\b(etb|display|displays|demi|coffret|coffrets|booster|boosters|bundle|tripack|duopack|blister|upc|pokebox|poke ?box|tin|mini ?tin|collection|deck|kit|scelle|scelles|carton|case|pack)\b/;
+  /\b(etbs?|elite|displays?|demi|coffrets?|boosters?|bundles?|tripacks?|duopacks?|blisters?|upc|premium|pokebox|poke ?box|tins?|mini|collection|decks?|kits?|scelles?|cartons?|case|pack|boites?|classeur|poster|figurine)\b/;
+
+/**
+ * Onglet à montrer pour une requête : Scellés si elle nomme un type de produit (« etb règne delta », « display 151 »),
+ * sinon Cartes ; et si cet onglet est vide alors que l'autre a des résultats, l'autre (« carton rouge » est une carte,
+ * « pokémon center » un produit).
+ */
+function ongletPour(requete: string, r: ResultatsRecherche): Onglet {
+  const prefere: Onglet = MOTS_SCELLES.test(normaliser(requete)) ? 'scelles' : 'cartes';
+  const autre: Onglet = prefere === 'cartes' ? 'scelles' : 'cartes';
+  const nb = (o: Onglet) => (o === 'cartes' ? r.cartes.length : r.scelles.length);
+  return nb(prefere) === 0 && nb(autre) > 0 ? autre : prefere;
+}
+
+/**
+ * Arrivée sur l'écran (appelée une fois par montage, sans effet si elle est rejouée).
+ * Retour d'une fiche : tout est retrouvé tel quel. Arrivée pour un onglet précis (« Chercher un scellé » →
+ * /recherche/scelles, « Chercher à la main » du scanner) : cet onglet, et si la recherche gardée était faite sur
+ * l'autre onglet (« Dracaufeu » dans les cartes), on repart d'un champ vide.
+ */
+function arriver(ongletInitial: Onglet | undefined): void {
+  const ecran = ongletInitial ? 'scelles' : 'recherche';
+  const etatHistorique = history.state as Record<string, unknown> | null;
+  const intention = etatHistorique?.[INTENTION_RECHERCHE];
+  let voulu: Onglet | null = null;
+  if (ongletInitial) {
+    if (memoire.ecran !== 'scelles') voulu = ongletInitial; // sinon : retour d'une fiche ouverte depuis cet écran
+  } else if (intention === 'cartes' || intention === 'scelles') {
+    voulu = intention;
+    // Lue une seule fois : revenir d'une fiche sur cette entrée de l'historique ne doit pas tout effacer.
+    history.replaceState({ ...etatHistorique, [INTENTION_RECHERCHE]: null }, '');
+  }
+  if (voulu) {
+    if (memoire.onglet !== voulu || !ongletInitial) {
+      memoire.saisie = '';
+      memoire.resultats = null;
+      memoire.nbCartes = PAS_CARTES;
+      memoire.nbScelles = PAS_SCELLES;
+      memoire.defilement = 0;
+      memoire.choixManuel = false;
+      memoire.ongletChoisiPour = '';
+    }
+    memoire.onglet = voulu;
+  }
+  memoire.ecran = ecran;
+}
 
 export function Recherche({ ongletInitial }: { ongletInitial?: Onglet } = {}) {
   const etat = useDonnees();
+  useState(() => arriver(ongletInitial));
   const [saisie, setSaisie] = useState(memoire.saisie);
-  const [onglet, setOngletBrut] = useState<Onglet>(ongletInitial ?? memoire.onglet);
-  // Un choix d'onglet fait à la main n'est pas écrasé par la bascule automatique.
-  // Arrivée par « Chercher un scellé » : l'onglet Scellés est voulu, on n'y touche plus.
-  const choixManuel = useRef(ongletInitial != null);
+  const [onglet, setOngletBrut] = useState<Onglet>(memoire.onglet);
+  // Arrivée par « Chercher un scellé » (/recherche/scelles) : on reste sur les scellés, quoi qu'on tape.
+  const verrou = ongletInitial != null;
+  // Un choix d'onglet fait à la main n'est pas écrasé par la bascule automatique (jusqu'à ce que le champ soit vidé).
   const setOnglet = (o: Onglet) => {
-    choixManuel.current = true;
+    memoire.choixManuel = true;
     setOngletBrut(o);
   };
   const [nbCartes, setNbCartes] = useState(memoire.nbCartes);
@@ -107,6 +160,14 @@ export function Recherche({ ongletInitial }: { ongletInitial?: Onglet } = {}) {
   const { r: resultats, requete: requeteAffichee, enCours } = useResultats(d, requete, limite);
   const recherche = requete.length >= 2;
 
+  // Bascule automatique, une fois par requête, quand ses résultats arrivent (pas à chaque frappe : pas de clignotement).
+  // Avant l'affichage (layout) : on ne voit jamais « Aucune carte pour « etb » » le temps d'une image.
+  useLayoutEffect(() => {
+    if (verrou || memoire.choixManuel || !resultats || enCours || memoire.ongletChoisiPour === requeteAffichee) return;
+    memoire.ongletChoisiPour = requeteAffichee;
+    setOngletBrut(ongletPour(requeteAffichee, resultats));
+  }, [verrou, resultats, enCours, requeteAffichee]);
+
   // Le catalogue part vers le worker dès l'arrivée, avant la première frappe.
   useEffect(() => {
     if (d) preparerRecherche(d);
@@ -119,7 +180,12 @@ export function Recherche({ ongletInitial }: { ongletInitial?: Onglet } = {}) {
 
   // Défilement mémorisé en continu, restauré au retour.
   useEffect(() => {
-    const noter = () => (memoire.defilement = window.scrollY);
+    const noter = () => {
+      // Premier passage vers une fiche (écran chargé à la demande) : la recherche reste montée mais cachée le temps du
+      // chargement, la page raccourcit et le navigateur remonte. Ce défilement-là ne compte pas : l'adresse a déjà changé.
+      if (!location.hash.startsWith('#/recherche')) return;
+      memoire.defilement = window.scrollY;
+    };
     window.addEventListener('scroll', noter, { passive: true });
     return () => window.removeEventListener('scroll', noter);
   }, []);
@@ -132,9 +198,11 @@ export function Recherche({ ongletInitial }: { ongletInitial?: Onglet } = {}) {
     setSaisie(texte);
     setNbCartes(PAS_CARTES);
     setNbScelles(PAS_SCELLES);
-    // « etb règne delta », « display 151 »… : on montre directement les produits scellés
-    const q = normaliser(texte);
-    if (!choixManuel.current && q.length >= 2) setOngletBrut(MOTS_SCELLES.test(q) ? 'scelles' : 'cartes');
+    // Champ vidé : nouvelle recherche, la bascule automatique reprend la main.
+    if (normaliser(texte).length < 2) {
+      memoire.choixManuel = false;
+      memoire.ongletChoisiPour = '';
+    }
   };
 
   return (

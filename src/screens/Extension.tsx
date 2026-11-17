@@ -26,7 +26,7 @@ import { Montant } from '../components/Montant';
 import { FeuilleAjout } from '../components/objets/FeuilleAjout';
 import { Segments } from '../components/Segments';
 import { Vide } from '../components/Vide';
-import { prixCarte, useDonnees, type Carte, type Donnees, type Extension as ExtensionCatalogue } from '../data/catalogue';
+import { prixCarte, useDonnees, type Donnees, type Extension as ExtensionCatalogue } from '../data/catalogue';
 import type { ObjetCatalogue } from '../data/valeur';
 import { retirerUnDe, usePossessions } from '../db/collection';
 import { useReglages } from '../db/reglages';
@@ -108,19 +108,33 @@ function Classeur({ d, ext }: { d: Donnees; ext: ExtensionCatalogue }) {
     return { officielles, secretes, nbSecretes, valeur, enTrop, enDouble };
   }, [ext, detenu]);
 
+  // Pochettes touchées (+, −, appui long) : elles restent à leur place jusqu'au prochain changement de filtre.
+  // Sinon, dans « Manquantes », « Possédées » ou « Doublons », la pochette disparaît et la suivante glisse sous le doigt :
+  // un double tap ajoutait (ou retirait) la carte voisine.
+  const [touchees, setTouchees] = useState<ReadonlySet<string>>(() => new Set());
+  const toucher = useCallback((id: string) => setTouchees((t) => (t.has(id) ? t : new Set(t).add(id))), []);
+
   const visibles = useMemo(() => {
     if (!detenu) return [];
     switch (filtre) {
       case 'possedees':
-        return ext.cartes.filter((c) => detenu.has(c.id));
+        return ext.cartes.filter((c) => detenu.has(c.id) || touchees.has(c.id));
       case 'manquantes':
-        return ext.cartes.filter((c) => !detenu.has(c.id));
+        return ext.cartes.filter((c) => !detenu.has(c.id) || touchees.has(c.id));
       case 'doublons':
-        return ext.cartes.filter((c) => (detenu.get(c.id)?.enTrop ?? 0) > 0);
+        return ext.cartes.filter((c) => (detenu.get(c.id)?.enTrop ?? 0) > 0 || touchees.has(c.id));
       default:
         return ext.cartes;
     }
-  }, [ext, detenu, filtre]);
+  }, [ext, detenu, filtre, touchees]);
+
+  // Ce que coûterait le reste à la cote (catalogue, pas la collection) : seulement les cartes vraiment manquantes.
+  const coutManquantes = useMemo(() => {
+    if (!detenu) return 0;
+    let cout = 0;
+    for (const c of ext.cartes) if (!detenu.has(c.id)) cout += cotes.get(c.id) ?? 0;
+    return cout;
+  }, [ext, detenu, cotes]);
 
   useMemoireDefilement(`extension:${ext.id}`, detenu != null);
 
@@ -128,9 +142,10 @@ function Classeur({ d, ext }: { d: Donnees; ext: ExtensionCatalogue }) {
   const actions = useMemo<ActionsCarte>(
     () => ({
       plus: (c) => {
+        toucher(c.id);
         ajouterUnExemplaire(c, etatParDefaut).then(
           () => {
-            // Dans « Manquantes », la pochette disparaît : on le dit, avec de quoi revenir en arrière.
+            // Dans « Manquantes », on le dit, avec de quoi revenir en arrière.
             if (filtre === 'manquantes') {
               annoncer(`${c.nom} est dans ta collection.`, { libelle: 'Annuler', faire: () => retirerUnDe('carte', c.id) });
             }
@@ -139,16 +154,21 @@ function Classeur({ d, ext }: { d: Donnees; ext: ExtensionCatalogue }) {
         );
       },
       moins: (c) => {
+        toucher(c.id);
         retirerUnExemplaire(c).catch(() => annoncer('Retrait impossible. Réessaie.'));
       },
-      appuiLong: (c) => setAjout({ objet: { type: 'carte', carte: c }, ouverte: true }),
+      appuiLong: (c) => {
+        toucher(c.id);
+        setAjout({ objet: { type: 'carte', carte: c }, ouverte: true });
+      },
     }),
-    [etatParDefaut, filtre],
+    [etatParDefaut, filtre, toucher],
   );
 
   const changerFiltre = useCallback(
     (f: Filtre) => {
       setFiltre(f);
+      setTouchees(new Set());
       // Si on est déjà descendu dans la grille, on remonte à son début (sous les onglets).
       const grille = refGrille.current;
       const barre = refBarre.current;
@@ -192,7 +212,8 @@ function Classeur({ d, ext }: { d: Donnees; ext: ExtensionCatalogue }) {
                   <span className="font-semibold text-encre-3"> / {nombre(total)}</span>
                 </p>
                 <p className="mt-1 text-xs text-encre-2">
-                  {stats.officielles > 1 ? 'cartes officielles' : 'carte officielle'}
+                  {/* s'accorde avec le total : « 0 / 103 cartes officielles » */}
+                  {total > 1 ? 'cartes officielles' : 'carte officielle'}
                   {stats.secretes > 0 && `, + ${pluriel(stats.secretes, 'secrète')}`}
                 </p>
               </div>
@@ -230,7 +251,7 @@ function Classeur({ d, ext }: { d: Donnees; ext: ExtensionCatalogue }) {
       <div ref={refGrille} className="pt-2 pb-6">
         {detenu && stats && (
           <>
-            {visibles.length > 0 && <Compte filtre={filtre} visibles={visibles} cotes={cotes} enTrop={stats.enTrop} />}
+            {visibles.length > 0 && <Compte filtre={filtre} cout={coutManquantes} enTrop={stats.enTrop} />}
             {visibles.length === 0 ? (
               <VideFiltre filtre={filtre} onToutes={() => changerFiltre('toutes')} />
             ) : (
@@ -268,13 +289,11 @@ function Classeur({ d, ext }: { d: Donnees; ext: ExtensionCatalogue }) {
 }
 
 /** Ligne d'information au-dessus de la grille, seulement quand elle apprend quelque chose (le nombre est déjà sur la pilule). */
-function Compte({ filtre, visibles, cotes, enTrop }: { filtre: Filtre; visibles: Carte[]; cotes: Map<string, number | null>; enTrop: number }) {
+function Compte({ filtre, cout, enTrop }: { filtre: Filtre; cout: number; enTrop: number }) {
   let texte: string;
   let droite: string | null = null;
   if (filtre === 'manquantes') {
     // Ce que coûterait le reste à la cote (catalogue, pas la collection)
-    let cout = 0;
-    for (const c of visibles) cout += cotes.get(c.id) ?? 0;
     if (cout <= 0) return null;
     texte = 'pour compléter, à la cote du jour';
     droite = `environ ${euros(cout)}`;

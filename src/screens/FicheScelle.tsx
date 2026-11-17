@@ -37,8 +37,8 @@ export function FicheScelle({ id }: { id: string }) {
           action={
             <div className="flex flex-col items-center gap-2">
               <Bouton onClick={() => history.back()}>Revenir en arrière</Bouton>
-              <Link href="/recherche" className="inline-flex min-h-11 items-center px-3 font-semibold text-dos">
-                Chercher un produit
+              <Link href="/recherche/scelles" className="inline-flex min-h-11 items-center px-3 font-semibold text-dos">
+                Chercher un produit scellé
               </Link>
             </div>
           }

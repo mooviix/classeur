@@ -14,7 +14,7 @@ import { Visuel } from '../Visuel';
 import { annoncer } from '../fiche/annonce';
 import { DejaPossede } from '../fiche/Elements';
 import { Champ, ChampMontant, ChoixEtat, Compteur, Erreur, PuceAction, Puces, Rubrique } from '../fiche/Formulaire';
-import { CLASSE_CHAMP, formatSaisie, lireGradation, lireMontant, numeroCarte, useCleOuverture, type SaisieGradation } from '../fiche/outils';
+import { CLASSE_CHAMP, erreurDate, formatSaisie, lireGradation, lireMontant, numeroCarte, useCleOuverture, type SaisieGradation } from '../fiche/outils';
 
 interface Props {
   objet: ObjetCatalogue | null;
@@ -41,18 +41,34 @@ function FormulaireAjout({ objet, ouverte, onFermer, varianteInitiale }: Props) 
   const lots = useLotsDe(objet?.type ?? 'carte', ref);
   const deja = lots?.reduce((s, l) => s + l.quantite, 0) ?? 0;
 
-  const [cleVariante, setCleVariante] = useState<string | null>(() => (carte ? (varianteDe(carte, varianteInitiale)?.cle ?? null) : null));
-  const [etatChoisi, setEtatChoisi] = useState<Etat | null>(null);
-  const etat = etatChoisi ?? r.etatParDefaut;
-  const [gradation, setGradation] = useState<SaisieGradation | null>(null);
-  const [quantite, setQuantite] = useState(1);
-  const [prix, setPrix] = useState('');
-  const [dateAchat, setDateAchat] = useState(aujourdhui);
-  const [lieu, setLieu] = useState('');
-  const [note, setNote] = useState('');
-  const [valeurPerso, setValeurPerso] = useState('');
-  const [dernier, setDernier] = useState<number | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
+  // Toute modification efface le message d'erreur de la tentative précédente (il est revérifié à l'envoi).
+  const champ =
+    <T,>(set: (v: T) => void) =>
+    (v: T) => {
+      setErreur(null);
+      set(v);
+    };
+  const [cleVariante, setCleVarianteBrut] = useState<string | null>(() => (carte ? (varianteDe(carte, varianteInitiale)?.cle ?? null) : null));
+  const setCleVariante = champ(setCleVarianteBrut);
+  const [etatChoisi, setEtatChoisiBrut] = useState<Etat | null>(null);
+  const setEtatChoisi = champ(setEtatChoisiBrut);
+  const etat = etatChoisi ?? r.etatParDefaut;
+  const [gradation, setGradationBrut] = useState<SaisieGradation | null>(null);
+  const setGradation = champ(setGradationBrut);
+  const [quantite, setQuantiteBrut] = useState(1);
+  const setQuantite = champ(setQuantiteBrut);
+  const [prix, setPrixBrut] = useState('');
+  const setPrix = champ(setPrixBrut);
+  const [dateAchat, setDateAchatBrut] = useState(aujourdhui);
+  const setDateAchat = champ(setDateAchatBrut);
+  const [lieu, setLieuBrut] = useState('');
+  const setLieu = champ(setLieuBrut);
+  const [note, setNoteBrut] = useState('');
+  const setNote = champ(setNoteBrut);
+  const [valeurPerso, setValeurPersoBrut] = useState('');
+  const setValeurPerso = champ(setValeurPersoBrut);
+  const [dernier, setDernier] = useState<number | null>(null);
   const [enCours, setEnCours] = useState(false);
 
   useEffect(() => {
@@ -92,6 +108,8 @@ function FormulaireAjout({ objet, ouverte, onFermer, varianteInitiale }: Props) 
     if (!objet || enCours) return;
     if (prixLu === null) return setErreur('Le prix d’achat n’est pas un montant. Écris par exemple 12,40.');
     if (valeurLue === null) return setErreur('La valeur estimée n’est pas un montant. Écris par exemple 80 ou 79,90.');
+    const dateKo = erreurDate(dateAchat, aujourdhui(), 'La date d’achat');
+    if (dateKo) return setErreur(dateKo);
     let g: Gradation | undefined;
     if (carte && gradation) {
       const lu = lireGradation(gradation);
@@ -204,7 +222,15 @@ function FormulaireAjout({ objet, ouverte, onFermer, varianteInitiale }: Props) 
           <div className="mt-5 grid grid-cols-2 gap-3">
             <Champ label="Date d’achat">
               {(id) => (
-                <input id={id} type="date" value={dateAchat} max={aujourdhui()} onChange={(e) => setDateAchat(e.target.value)} className={`${CLASSE_CHAMP} chiffres`} />
+                <input
+                  id={id}
+                  type="date"
+                  value={dateAchat}
+                  max={aujourdhui()}
+                  aria-invalid={erreurDate(dateAchat, aujourdhui(), '') != null || undefined}
+                  onChange={(e) => setDateAchat(e.target.value)}
+                  className={`${CLASSE_CHAMP} chiffres`}
+                />
               )}
             </Champ>
             <Champ label="Lieu (facultatif)">
@@ -222,7 +248,15 @@ function FormulaireAjout({ objet, ouverte, onFermer, varianteInitiale }: Props) 
 
           <Champ className="mt-5" label="Note (facultatif)">
             {(id) => (
-              <input id={id} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Tirée d’un booster, échange…" autoComplete="off" enterKeyHint="done" className={CLASSE_CHAMP} />
+              <input
+                id={id}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={scelle ? 'Cadeau, précommande, échange…' : 'Tirée d’un booster, échange…'}
+                autoComplete="off"
+                enterKeyHint="done"
+                className={CLASSE_CHAMP}
+              />
             )}
           </Champ>
         </>

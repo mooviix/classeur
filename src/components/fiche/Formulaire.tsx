@@ -206,7 +206,8 @@ export function ChoixEtat({
               )}
             </Champ>
           )}
-          <Champ label="Note">
+          {/* « sur 10 » : à ne pas confondre avec la note libre (commentaire) plus bas dans la feuille */}
+          <Champ label="Note sur 10">
             {(id) => (
               <input
                 id={id}

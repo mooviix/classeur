@@ -1,4 +1,4 @@
-import { ArrowUpDown, ChartLine, Heart, ScanLine, Search } from 'lucide-react';
+import { ArrowUpDown, ChartLine, Heart, Plus, ScanLine, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
 import { Bouton } from '../components/Bouton';
@@ -21,6 +21,7 @@ import { useEtatSession, usePreference } from '../components/classeur/preference
 import { BoutonIcone, Ecran } from '../components/Ecran';
 import { Feuille } from '../components/Feuille';
 import { annoncer } from '../components/fiche/annonce';
+import { INTENTION_RECHERCHE } from '../components/fiche/outils';
 import { Montant } from '../components/Montant';
 import { FeuilleAjout } from '../components/objets/FeuilleAjout';
 import { LigneScelle } from '../components/objets/LigneScelle';
@@ -114,10 +115,12 @@ export function Collection() {
   const [colonnes] = useColonnes();
   const [segment, setSegment] = useEtatSession<Segment>('collection-segment', 'cartes');
   const [filtre, setFiltre] = useEtatSession<FiltreCartes>('collection-filtre', 'toutes');
-  const [extId, setExtId] = useEtatSession<string | null>('collection-extension', null);
+  // Un filtre d'extension par segment : « 151 » choisi pour les cartes ne doit pas vider la liste des scellés.
+  const [extCartes, setExtCartes] = useEtatSession<string | null>('collection-extension', null);
+  const [extScelles, setExtScelles] = useEtatSession<string | null>('collection-extension-scelles', null);
   const [triCartes, setTriCartes] = usePreference<TriCartes>('collection-tri-cartes', 'valeur', ['valeur', 'recent', 'nom', 'extension', 'numero']);
   const [triScelles, setTriScelles] = usePreference<TriScelles>('collection-tri-scelles', 'valeur', ['valeur', 'recent', 'nom', 'extension']);
-  const [feuille, setFeuille] = useState<'tri' | 'extension' | null>(null);
+  const [feuille, setFeuille] = useState<'tri' | 'extension' | 'ajout' | null>(null);
   const [ajout, setAjout] = useState<{ objet: ObjetCatalogue | null; ouverte: boolean }>({ objet: null, ouverte: false });
 
   const d = etat.statut === 'pret' ? etat.donnees : null;
@@ -133,29 +136,55 @@ export function Collection() {
   }, [d, lots, r, filtre, toutesCartes]);
   const cartes = useMemo(() => {
     if (!cartesFiltre) return null;
-    const liste = extId ? cartesFiltre.filter((g) => g.carte.ext.id === extId) : [...cartesFiltre];
+    const liste = extCartes ? cartesFiltre.filter((g) => g.carte.ext.id === extCartes) : [...cartesFiltre];
     return liste.sort(COMPARER_CARTES[triCartes]);
-  }, [cartesFiltre, extId, triCartes]);
+  }, [cartesFiltre, extCartes, triCartes]);
+
+  // Pochettes figées : tant que la vue (segment, filtre, extension, tri) ne change pas, un + ou un − ne déplace ni ne
+  // retire aucune pochette. Sinon, triée par valeur, la carte remonte (ou disparaît) et sa voisine glisse sous le doigt :
+  // le tap suivant ajoutait ou retirait une autre carte. Nouvel ordre au prochain changement de vue ou retour sur l'écran.
+  const vueGrille = `${segment}|${filtre}|${extCartes ?? ''}|${triCartes}`;
+  const [ordre, setOrdre] = useState<{ vue: string; ids: readonly string[] } | null>(null);
+  if (cartes && ordre?.vue !== vueGrille) setOrdre({ vue: vueGrille, ids: cartes.map((g) => g.carte.id) });
+  const affichees = useMemo(() => {
+    if (!cartes || !d || !toutesCartes || ordre?.vue !== vueGrille) return cartes;
+    const parId = new Map(cartes.map((g) => [g.carte.id, g]));
+    const toutesParId = new Map(toutesCartes.map((g) => [g.carte.id, g]));
+    const liste: GroupeCarte[] = [];
+    for (const id of ordre.ids) {
+      const g = parId.get(id) ?? toutesParId.get(id);
+      parId.delete(id);
+      if (g) liste.push(g);
+      else {
+        // plus aucun exemplaire : pochette vide à la même place, avec « + » pour la remettre
+        const carte = d.cartesParId.get(id);
+        if (carte) liste.push({ carte, quantite: 0, valeur: null, enTrop: 0, dernierAjout: '', gradees: 0 });
+      }
+    }
+    // une carte qui entre dans la vue entre-temps se range à la fin
+    liste.push(...parId.values());
+    return liste;
+  }, [cartes, toutesCartes, d, ordre, vueGrille]);
 
   const tousScelles = useMemo(() => (d && lots ? regrouperScelles(d, lots, r) : null), [d, lots, r]);
   const scelles = useMemo(() => {
     if (!tousScelles) return null;
-    const liste = extId ? tousScelles.filter((g) => g.scelle.ext?.id === extId) : [...tousScelles];
+    const liste = extScelles ? tousScelles.filter((g) => g.scelle.ext?.id === extScelles) : [...tousScelles];
     return liste.sort(COMPARER_SCELLES[triScelles]);
-  }, [tousScelles, extId, triScelles]);
+  }, [tousScelles, extScelles, triScelles]);
 
   // Compteurs des puces (avec le filtre d'extension)
   const comptes = useMemo(() => {
     const c = { toutes: 0, loose: 0, gradees: 0, doublons: 0 };
     for (const g of toutesCartes ?? []) {
-      if (extId && g.carte.ext.id !== extId) continue;
+      if (extCartes && g.carte.ext.id !== extCartes) continue;
       c.toutes++;
       if (g.quantite > g.gradees) c.loose++;
       if (g.gradees > 0) c.gradees++;
       if (g.enTrop > 0) c.doublons++;
     }
     return c;
-  }, [toutesCartes, extId]);
+  }, [toutesCartes, extCartes]);
 
   // Extensions présentes dans le segment en cours (pour le filtre)
   const extensions = useMemo(() => {
@@ -207,8 +236,23 @@ export function Collection() {
     { id: 'scelles' as const, nom: nbScelles > 0 ? pluriel(nbScelles, 'scellé') : 'Scellés' },
   ];
 
+  // Recherche des cartes, champ vide (même si la dernière recherche portait sur des scellés).
+  const chercherCarte = () => naviguer('/recherche', { state: { [INTENTION_RECHERCHE]: 'cartes' } });
+  // « Ajouter », toujours visible dans l'en-tête : un scellé se cherche par son nom ; une carte se scanne ou se cherche.
+  const ajouter = () => (segment === 'scelles' ? naviguer('/recherche/scelles') : setFeuille('ajout'));
+
   const actionsEntete = (
     <>
+      <button
+        type="button"
+        onClick={ajouter}
+        aria-label={segment === 'scelles' ? 'Ajouter un scellé' : 'Ajouter une carte'}
+        title={segment === 'scelles' ? 'Ajouter un scellé' : 'Ajouter une carte'}
+        className="appui mr-1 flex h-10 shrink-0 items-center gap-1 rounded-full bg-encre pr-3.5 pl-2.5 text-petit font-semibold text-pochette"
+      >
+        <Plus size={18} strokeWidth={2.4} aria-hidden />
+        Ajouter
+      </button>
       <BoutonIcone label="Mes souhaits" onClick={() => naviguer('/souhaits')}>
         <Heart size={22} aria-hidden />
       </BoutonIcone>
@@ -227,27 +271,39 @@ export function Collection() {
     );
   }
 
+  // Filtre d'extension du segment affiché
+  const extId = segment === 'cartes' ? extCartes : extScelles;
+  const setExtId = segment === 'cartes' ? setExtCartes : setExtScelles;
   const extActive = extId ? (extensions.find((e) => e.ext.id === extId)?.ext ?? d?.extensionsParId.get(extId) ?? null) : null;
   const toutAfficher = () => {
-    setFiltre('toutes');
+    if (segment === 'cartes') setFiltre('toutes');
     setExtId(null);
   };
   const tri = segment === 'cartes' ? TRIS_CARTES.find((t) => t.id === triCartes) : TRIS_SCELLES.find((t) => t.id === triScelles);
 
   let contenu;
-  if (!pret || !cartes || !scelles) {
+  if (!pret || !cartes || !affichees || !scelles) {
     contenu = <Chargement texte="Lecture de ta collection…" />;
   } else if (nbCartes + nbScelles === 0) {
-    contenu = <VideCollection titre="Ta collection est vide" texte="Scanne tes cartes ou cherche-les : chaque ajout se range ici, avec sa cote du jour." />;
+    // Collection vide : l'invitation suit l'onglet choisi (scanner ou chercher une carte, ou chercher un scellé).
+    contenu =
+      segment === 'scelles' ? (
+        <VideScelles titre="Ta collection est vide" />
+      ) : (
+        <VideCollection
+          titre="Ta collection est vide"
+          texte="Scanne tes cartes ou cherche-les : chaque ajout se range ici, avec sa cote du jour."
+          onChercher={chercherCarte}
+        />
+      );
   } else {
     const filtresActifs = extId != null || (segment === 'cartes' && filtre !== 'toutes');
     contenu = (
       <>
-        {segment === 'cartes' ? (
-          <ResumeCartes groupes={cartes} filtre={filtresActifs} />
-        ) : (
-          <ResumeScelles groupes={scelles} filtre={filtresActifs} />
-        )}
+        {/* pas de résumé à 0 € au-dessus d'un onglet vide : seulement l'invitation à ajouter */}
+        {segment === 'cartes'
+          ? nbCartes > 0 && <ResumeCartes groupes={cartes} filtre={filtresActifs} />
+          : nbScelles > 0 && <ResumeScelles groupes={scelles} filtre={filtresActifs} />}
 
         {segment === 'cartes' && nbCartes > 0 && (
           <Puces
@@ -277,40 +333,44 @@ export function Collection() {
 
         {segment === 'cartes' ? (
           nbCartes === 0 ? (
-            <VideCollection titre="Pas encore de carte" texte="Scanne tes cartes ou cherche-les : elles se rangeront ici, avec leur cote du jour." />
-          ) : cartes.length === 0 ? (
+            <VideCollection
+              titre="Pas encore de carte"
+              texte="Scanne tes cartes ou cherche-les : elles se rangeront ici, avec leur cote du jour."
+              onChercher={chercherCarte}
+            />
+          ) : affichees.length === 0 ? (
             <VideFiltre segment="cartes" filtre={filtre} ext={extActive} onToutAfficher={toutAfficher} />
           ) : (
             <GrilleCollection
-              groupes={cartes}
+              groupes={affichees}
               colonnes={colonnes}
-              vue={`${filtre}|${extId ?? ''}|${triCartes}`}
+              vue={`${filtre}|${extCartes ?? ''}|${triCartes}`}
               initial={souvenir?.n ?? 0}
               onAffiches={noterAffiches}
               masques={masques}
-              sousTitre={extId ? 'numero' : 'extension'}
+              sousTitre={extCartes ? 'numero' : 'extension'}
               actions={actions}
             />
           )
         ) : nbScelles === 0 ? (
-          <Vide
-            titre="Pas encore de scellé"
-            texte="Displays, coffrets, boosters : ajoute-les depuis la recherche pour suivre leur cote et ce qu’ils te rapportent."
-            action={
-              <LienBouton href="/recherche/scelles" icone={<Search size={18} aria-hidden />}>
-                Chercher un scellé
-              </LienBouton>
-            }
-          />
+          <VideScelles titre="Pas encore de scellé" />
         ) : scelles.length === 0 ? (
           <VideFiltre segment="scelles" filtre={filtre} ext={extActive} onToutAfficher={toutAfficher} />
         ) : (
-          // clé = extension + tri : les premières lignes reviennent en cascade quand on change de vue
-          <ul key={`${extId ?? ''}|${triScelles}`} className="bloc cascade -mx-1 mb-6 px-4">
-            {scelles.map((g) => (
-              <LigneScelleCollection key={g.scelle.ref} groupe={g} />
-            ))}
-          </ul>
+          <>
+            {/* clé = extension + tri : les premières lignes reviennent en cascade quand on change de vue */}
+            <ul key={`${extScelles ?? ''}|${triScelles}`} className="bloc cascade -mx-1 px-4">
+              {scelles.map((g) => (
+                <LigneScelleCollection key={g.scelle.ref} groupe={g} />
+              ))}
+            </ul>
+            {/* le scanner ne reconnaît que les cartes : un scellé s'ajoute depuis sa recherche */}
+            <div className="-mx-1 mt-3 mb-6 flex flex-col">
+              <LienBouton href="/recherche/scelles" genre="secondaire" icone={<Plus size={18} strokeWidth={2.4} aria-hidden />}>
+                Ajouter un scellé
+              </LienBouton>
+            </div>
+          </>
         )}
       </>
     );
@@ -362,6 +422,18 @@ export function Collection() {
             })),
           ]}
         />
+      </Feuille>
+
+      <Feuille ouverte={feuille === 'ajout'} onFermer={() => setFeuille(null)} titre="Ajouter une carte">
+        <p className="text-petit text-encre-2">Scanne la carte avec l’appareil photo, ou cherche-la par son nom ou son numéro (25/102).</p>
+        <div className="mt-4 flex flex-col items-stretch gap-2 pb-2">
+          <LienBouton href="/scanner" genre="scan" plein icone={<ScanLine size={20} aria-hidden />}>
+            Scanner mes cartes
+          </LienBouton>
+          <Bouton genre="secondaire" plein onClick={chercherCarte} icone={<Search size={18} aria-hidden />}>
+            Chercher une carte
+          </Bouton>
+        </div>
       </Feuille>
 
       <FeuilleAjout objet={ajout.objet} ouverte={ajout.ouverte} onFermer={() => setAjout((a) => ({ ...a, ouverte: false }))} />
@@ -544,7 +616,8 @@ function GrilleCollection({
   );
 }
 
-function VideCollection({ titre, texte }: { titre: string; texte: string }) {
+/** Onglet Cartes sans carte : scanner, ou chercher une carte (recherche ouverte sur les cartes). */
+function VideCollection({ titre, texte, onChercher }: { titre: string; texte: string; onChercher: () => void }) {
   return (
     <Vide
       titre={titre}
@@ -554,10 +627,25 @@ function VideCollection({ titre, texte }: { titre: string; texte: string }) {
           <LienBouton href="/scanner" genre="scan" icone={<ScanLine size={20} aria-hidden />}>
             Scanner mes cartes
           </LienBouton>
-          <LienBouton href="/recherche" genre="secondaire" icone={<Search size={18} aria-hidden />}>
-            Chercher une carte ou un scellé
-          </LienBouton>
+          <Bouton genre="secondaire" onClick={onChercher} icone={<Search size={18} aria-hidden />}>
+            Chercher une carte
+          </Bouton>
         </div>
+      }
+    />
+  );
+}
+
+/** Onglet Scellés sans scellé : ils se cherchent par leur nom (le scanner ne reconnaît que les cartes). */
+function VideScelles({ titre }: { titre: string }) {
+  return (
+    <Vide
+      titre={titre}
+      texte="Displays, coffrets, boosters : cherche-les par leur nom pour suivre leur cote et ce qu’ils te rapportent."
+      action={
+        <LienBouton href="/recherche/scelles" icone={<Search size={18} aria-hidden />}>
+          Chercher un scellé
+        </LienBouton>
       }
     />
   );
@@ -576,19 +664,21 @@ function VideFiltre({
 }) {
   let titre: string;
   let texte: string | undefined;
+  // « de 151 », mais « d’Évolutions Prismatiques »
+  const de = (nom: string) => (/^[aeiouyàâäéèêëîïôöùûüœæ]/i.test(nom) ? `d’${nom}` : `de ${nom}`);
   if (segment === 'scelles') {
-    titre = ext ? `Aucun scellé de ${ext.nom}` : 'Aucun scellé ici';
+    titre = ext ? `Aucun scellé ${de(ext.nom)}` : 'Aucun scellé ici';
   } else if (filtre === 'gradees') {
-    titre = ext ? `Aucune carte gradée de ${ext.nom}` : 'Aucune carte gradée';
+    titre = ext ? `Aucune carte gradée ${de(ext.nom)}` : 'Aucune carte gradée';
     texte = 'Les cartes notées (PSA, PCA, CGC…) apparaîtront ici.';
   } else if (filtre === 'doublons') {
-    titre = ext ? `Pas de doublon de ${ext.nom}` : 'Pas de doublon';
+    titre = ext ? `Pas de doublon ${de(ext.nom)}` : 'Pas de doublon';
     texte = 'Une carte que tu as en plusieurs exemplaires de la même version apparaîtra ici.';
   } else if (filtre === 'loose') {
-    titre = ext ? `Aucune carte loose de ${ext.nom}` : 'Aucune carte loose';
+    titre = ext ? `Aucune carte loose ${de(ext.nom)}` : 'Aucune carte loose';
     texte = 'Les cartes non gradées apparaîtront ici.';
   } else {
-    titre = ext ? `Aucune carte de ${ext.nom}` : 'Aucune carte ici';
+    titre = ext ? `Aucune carte ${de(ext.nom)}` : 'Aucune carte ici';
   }
   return (
     <Vide

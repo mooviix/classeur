@@ -10,6 +10,7 @@ import { Eventail } from '../components/classeur/Eventail';
 import { Ecran } from '../components/Ecran';
 import { Feuille } from '../components/Feuille';
 import { annoncer } from '../components/fiche/annonce';
+import { numeroCarte } from '../components/fiche/outils';
 import { Vide } from '../components/Vide';
 import { Visuel } from '../components/Visuel';
 import { imageCarte, prixCarte, prixScelle, useDonnees, variante, type Carte, type Donnees } from '../data/catalogue';
@@ -183,9 +184,8 @@ function LigneSouhait({ ligne, onPrixMax, onRetirer }: { ligne: LigneSouhaitDonn
     detail = (
       <>
         <span className="truncate">{c.ext.nom}</span>
-        <span className="etroit shrink-0">
-          {c.num}/{c.ext.officiel}
-        </span>
+        {/* « 025/165 », mais « DP01 » ou « 001 » (promos sans total imprimé) */}
+        <span className="etroit shrink-0">{numeroCarte(c.num, c.ext.officiel)}</span>
         {v && v.cle !== c.variantes[0]?.cle && <span className="shrink-0">{v.libelle}</span>}
       </>
     );

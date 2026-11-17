@@ -5,13 +5,13 @@ import { valoriser, type ObjetCatalogue } from '../../data/valeur';
 import { vendre } from '../../db/collection';
 import { useReglages } from '../../db/reglages';
 import { db, type Possession } from '../../db/schema';
-import { aujourdhui, euros, sens } from '../../lib/format';
+import { aujourdhui, date as dateLongue, euros, sens } from '../../lib/format';
 import { Bouton } from '../Bouton';
 import { Feuille } from '../Feuille';
 import { Montant } from '../Montant';
 import { annoncer } from '../fiche/annonce';
 import { Champ, ChampMontant, Compteur, Erreur, PuceAction, Puces, Rubrique } from '../fiche/Formulaire';
-import { CLASSE_CHAMP, descriptionLot, formatSaisie, lireMontant, PLATEFORMES, useCleOuverture } from '../fiche/outils';
+import { CLASSE_CHAMP, descriptionLot, erreurDate, formatSaisie, lireMontant, PLATEFORMES, useCleOuverture } from '../fiche/outils';
 
 interface Props {
   lot: Possession | null;
@@ -29,16 +29,33 @@ function FormulaireVente({ lot, objet, ouverte, onFermer }: Props) {
   const d = useDonneesPretes();
   const r = useReglages();
   const max = lot?.quantite ?? 1;
-  const [quantite, setQuantite] = useState(1);
-  const [prix, setPrix] = useState('');
-  const [frais, setFrais] = useState('');
-  const [date, setDate] = useState(aujourdhui);
-  const [plateforme, setPlateforme] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
+  // Toute modification efface le message d'erreur de la tentative précédente (il est revérifié à l'envoi).
+  const champ =
+    <T,>(set: (v: T) => void) =>
+    (v: T) => {
+      setErreur(null);
+      set(v);
+    };
+  const [quantite, setQuantiteBrut] = useState(1);
+  const setQuantite = champ(setQuantiteBrut);
+  const [prix, setPrixBrut] = useState('');
+  const setPrix = champ(setPrixBrut);
+  const [frais, setFraisBrut] = useState('');
+  const setFrais = champ(setFraisBrut);
+  const [date, setDateBrut] = useState(aujourdhui);
+  const setDate = champ(setDateBrut);
+  const [plateforme, setPlateforme] = useState<string | null>(null);
   const [enCours, setEnCours] = useState(false);
 
-  const cote = d && lot ? valoriser(d, lot, r).unitaire : null;
+  const valeur = d && lot ? valoriser(d, lot, r) : null;
+  const cote = valeur?.unitaire ?? null;
   const coteArrondie = cote == null ? null : Math.round(cote * 100) / 100;
+  // Date de vente : pas dans le futur, ni avant l'achat (« le 3 mars » vendu le 2 mars : faute de frappe).
+  const dateVente = date || aujourdhui();
+  const dateKo =
+    erreurDate(date, aujourdhui(), 'La date de vente') ??
+    (lot?.dateAchat && dateVente < lot.dateAchat ? `La date de vente est avant la date d’achat (${dateLongue(lot.dateAchat)}).` : null);
   const prixLu = lireMontant(prix);
   const fraisLu = lireMontant(frais);
   const fraisTotal = typeof fraisLu === 'number' ? fraisLu : 0;
@@ -50,6 +67,7 @@ function FormulaireVente({ lot, objet, ouverte, onFermer }: Props) {
     if (prixLu === undefined) return setErreur('Indique le prix de vente d’un exemplaire.');
     if (prixLu === null) return setErreur('Le prix de vente n’est pas un montant. Écris par exemple 12,40.');
     if (fraisLu === null) return setErreur('Les frais ne sont pas un montant. Écris par exemple 1,50, ou laisse vide.');
+    if (dateKo) return setErreur(dateKo);
     setErreur(null);
     setEnCours(true);
     try {
@@ -57,7 +75,7 @@ function FormulaireVente({ lot, objet, ouverte, onFermer }: Props) {
         quantite,
         prixVente: prixLu,
         ...(fraisLu !== undefined ? { frais: fraisLu } : {}),
-        date: date || aujourdhui(),
+        date: dateVente,
         ...(plateforme ? { plateforme } : {}),
       });
       navigator.vibrate?.(12);
@@ -117,12 +135,15 @@ function FormulaireVente({ lot, objet, ouverte, onFermer }: Props) {
               <Compteur valeur={quantite} onChange={setQuantite} max={max} label="Quantité vendue" />
             </div>
             <Champ label={quantite > 1 ? 'Prix à l’unité' : 'Prix de vente'}>
-              {(id) => <ChampMontant id={id} valeur={prix} onChange={setPrix} invalide={prixLu === null} />}
+              {/* rouge aussi quand l'envoi a été refusé faute de prix */}
+              {(id) => <ChampMontant id={id} valeur={prix} onChange={setPrix} invalide={prixLu === null || (prixLu === undefined && erreur != null)} />}
             </Champ>
           </div>
           {coteArrondie != null && (
             <div className="mt-2 flex flex-wrap gap-2">
-              <PuceAction onClick={() => setPrix(formatSaisie(coteArrondie))}>Mettre la cote : {euros(coteArrondie)}</PuceAction>
+              <PuceAction onClick={() => setPrix(formatSaisie(coteArrondie))}>
+                {valeur?.source === 'manuelle' ? 'Mettre ta valeur' : 'Mettre la cote'} : {euros(coteArrondie)}
+              </PuceAction>
             </div>
           )}
 
@@ -131,7 +152,18 @@ function FormulaireVente({ lot, objet, ouverte, onFermer }: Props) {
               {(id) => <ChampMontant id={id} valeur={frais} onChange={setFrais} invalide={fraisLu === null} />}
             </Champ>
             <Champ label="Date de vente">
-              {(id) => <input id={id} type="date" value={date} max={aujourdhui()} onChange={(e) => setDate(e.target.value)} className={`${CLASSE_CHAMP} chiffres`} />}
+              {(id) => (
+                <input
+                  id={id}
+                  type="date"
+                  value={date}
+                  min={lot?.dateAchat}
+                  max={aujourdhui()}
+                  aria-invalid={dateKo != null || undefined}
+                  onChange={(e) => setDate(e.target.value)}
+                  className={`${CLASSE_CHAMP} chiffres`}
+                />
+              )}
             </Champ>
           </div>
 

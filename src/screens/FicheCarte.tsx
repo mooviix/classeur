@@ -7,6 +7,7 @@ import { Link, useLocation } from 'wouter';
 import { Bouton } from '../components/Bouton';
 import { Ecran } from '../components/Ecran';
 import { Vide } from '../components/Vide';
+import { annoncer } from '../components/fiche/annonce';
 import { EtatCatalogue } from '../components/fiche/EtatCatalogue';
 import { BarreAction, BoutonCoeur, EnTeteFiche, FondFlou, LiensExternes, Pastille, useEnTeteCompact } from '../components/fiche/Elements';
 import { GrandeImage } from '../components/fiche/GrandeImage';
@@ -62,6 +63,18 @@ function Contenu({ d, carte }: { d: Donnees; carte: Carte }) {
   const [zoom, setZoom] = useState(false);
   const [repere, compact] = useEnTeteCompact();
   const objet = useMemo(() => ({ type: 'carte' as const, carte }), [carte]);
+
+  // Un double tap sur le cœur ne doit pas créer deux souhaits : on ignore les taps pendant l'enregistrement.
+  const basculeEnCours = useRef(false);
+  const basculer = () => {
+    if (basculeEnCours.current) return;
+    basculeEnCours.current = true;
+    basculerSouhait('carte', carte.id, cleVariante ?? undefined)
+      .catch(() => annoncer('Souhait non enregistré. Réessaie.'))
+      .finally(() => {
+        basculeEnCours.current = false;
+      });
+  };
 
   const v = varianteDe(carte, cleVariante);
   const prix = prixVariante(d, v);
@@ -121,7 +134,7 @@ function Contenu({ d, carte }: { d: Donnees; carte: Carte }) {
         <EnTeteFiche
           titre={carte.nom}
           compact={compact}
-          action={<BoutonCoeur actif={souhaite} onClick={() => void basculerSouhait('carte', carte.id, cleVariante ?? undefined)} />}
+          action={<BoutonCoeur actif={souhaite} onClick={basculer} />}
         />
 
         {/* Zone de glisser : l'image, ses flèches et l'identité de la carte */}

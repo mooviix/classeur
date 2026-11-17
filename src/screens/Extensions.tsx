@@ -37,15 +37,16 @@ export function Extensions() {
   const suivi = useMemo(() => (d && lots ? suivreExtensions(d, lots, r) : null), [d, lots, r]);
   useMemoireDefilement('extensions', suivi != null);
 
-  // Clés de recherche : nom, code et série, sans accents
+  // Clés de recherche : nom, code, série et identifiant (sv03.5, 30th), sans accents.
+  // NFKD d'abord : « 30ᵉ » (e en exposant) devient « 30e », ce que l'on tape au clavier.
   const cles = useMemo(
-    () => new Map((d?.extensions ?? []).map((e) => [e.id, normaliser(`${e.nom} ${e.code ?? ''} ${e.serie.nom}`)])),
+    () => new Map((d?.extensions ?? []).map((e) => [e.id, normaliser(`${e.nom} ${e.code ?? ''} ${e.serie.nom} ${e.id}`.normalize('NFKD'))])),
     [d],
   );
 
   const resultat = useMemo(() => {
     if (!d || !suivi) return null;
-    const mots = normaliser(filtre).split(' ').filter(Boolean);
+    const mots = normaliser(filtre.normalize('NFKD')).split(' ').filter(Boolean);
     const series = new Map<string, GroupeSerie>();
     let nb = 0;
     let commencees = 0;

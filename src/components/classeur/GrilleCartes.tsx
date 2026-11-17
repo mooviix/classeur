@@ -1,8 +1,9 @@
 import { memo, type ReactNode } from 'react';
 import type { Carte } from '../../data/catalogue';
-import { ajouterLot, retirerUnDe } from '../../db/collection';
+import { ajouterLot, retirer } from '../../db/collection';
 import { db, type Etat } from '../../db/schema';
 import { annoncer } from '../fiche/annonce';
+import { descriptionLot } from '../fiche/outils';
 import { TuileCarte } from '../objets/TuileCarte';
 import { usePreference } from './preferences';
 
@@ -54,16 +55,18 @@ export function ajouterUnExemplaire(carte: Carte, etat: Etat): Promise<number> {
 }
 
 /**
- * Bouton « − » : retire un exemplaire avec retirerUnDe (le lot le plus récent),
- * après avoir gardé une copie de ce lot pour pouvoir l'annuler à l'identique.
+ * Bouton « − » : retire un exemplaire du lot non gradé le plus récent (une carte gradée seulement s'il n'y a qu'elles :
+ * un « − » rapide ne doit pas faire disparaître une PSA 10), après avoir gardé une copie du lot pour l'annuler à l'identique.
+ * Le message dit quel exemplaire est parti quand il y a un doute (plusieurs lots) ou qu'il s'agit d'une carte gradée.
  */
 export async function retirerUnExemplaire(carte: Carte): Promise<void> {
   const lots = await db.possessions.where('[type+ref]').equals(['carte', carte.id]).sortBy('ajouteLe');
-  const dernier = lots.at(-1);
+  const dernier = lots.findLast((l) => !l.gradation) ?? lots.at(-1);
   if (dernier?.id == null) return;
   const id = dernier.id;
-  await retirerUnDe('carte', carte.id);
-  annoncer(`${carte.nom} : un exemplaire retiré.`, {
+  await retirer(id, 1);
+  const lequel = lots.length > 1 || dernier.gradation ? ` (${descriptionLot(dernier, { type: 'carte', carte })})` : '';
+  annoncer(`${carte.nom}${lequel} : un exemplaire retiré.`, {
     libelle: 'Annuler',
     faire: async () => {
       const reste = await db.possessions.get(id);

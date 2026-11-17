@@ -2,7 +2,7 @@
 // Tout tourne sur le téléphone (src/scanner, dans un Web Worker) : pas de serveur, pas d'IA payante.
 // Parcours : gabarit 63 × 88 → photo fixe → détection + empreintes + recherche (≈ 0,1 à 0,3 s) → 3 à 5 propositions,
 // ou ajout direct en mode « ajout rapide » quand la 1re est nettement devant → feuille d'ajout.
-import { Flashlight, FlashlightOff, ImageIcon, LoaderCircle, RotateCcw, Search, X, Zap } from 'lucide-react';
+import { ChevronRight, Flashlight, FlashlightOff, ImageIcon, LoaderCircle, Package, RotateCcw, Search, X, Zap } from 'lucide-react';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ChangeEvent, type ReactNode, type RefObject } from 'react';
 import { useLocation } from 'wouter';
 import { Bouton } from '../components/Bouton';
@@ -10,13 +10,13 @@ import { Visuel } from '../components/Visuel';
 import { annoncer } from '../components/fiche/annonce';
 import { CoteQuiDefile } from '../components/fiche/CoteQuiDefile';
 import { DejaPossede } from '../components/fiche/Elements';
-import { numeroCarte } from '../components/fiche/outils';
+import { INTENTION_RECHERCHE, numeroCarte } from '../components/fiche/outils';
 import { FeuilleAjout } from '../components/objets/FeuilleAjout';
 import { chargerDonnees, imageCarte, prixCarte, useDonnees, type Carte, type Donnees } from '../data/catalogue';
 import type { FichierMeta } from '../data/types';
 import { ajouterLot, retirer, useQuantites } from '../db/collection';
 import { changerReglage, useReglages } from '../db/reglages';
-import { euros } from '../lib/format';
+import { aujourdhui, euros } from '../lib/format';
 import { FRACTION_GABARIT, RAPPORT_GABARIT } from '../scanner/cadre';
 import { classerErreurCamera, fermerCamera, ouvrirCamera, prendrePhoto, reglerLampe, type Camera, type ErreurCamera } from '../scanner/camera';
 import {
@@ -279,6 +279,11 @@ export function Scanner() {
     else naviguer('/');
   };
 
+  // La carte en main ne se retrouve pas : recherche des cartes, champ vide (même si la dernière recherche portait sur des scellés).
+  const chercherALaMain = () => naviguer('/recherche', { state: { [INTENTION_RECHERCHE]: 'cartes' } });
+  // Le scanner ne reconnaît que les cartes : un produit scellé se cherche par son nom.
+  const chercherScelle = () => naviguer('/recherche/scelles');
+
   const ajouterDirect = async (p: Proposee) => {
     session.suivre(p.carte.id);
     try {
@@ -289,6 +294,8 @@ export function Scanner() {
         langue: 'fr',
         variante: p.carte.variantes[0]?.cle,
         etat: reglages.etatParDefaut,
+        // comme la feuille d'ajout (date du jour par défaut) : deux ajouts identiques, rapide ou non, vont dans le même lot
+        dateAchat: aujourdhui(),
       });
       vibrer(p.prix);
       setBanniere({ carte: p.carte, prix: p.prix, lot, cle: Date.now() });
@@ -419,7 +426,7 @@ export function Scanner() {
     void changerReglage('ajoutRapide', actif);
     annoncer(
       actif
-        ? 'Ajout rapide activé : une carte reconnue avec certitude est ajoutée tout de suite, en version normale.'
+        ? 'Ajout rapide activé : une carte reconnue avec certitude est ajoutée tout de suite, dans sa version principale.'
         : 'Ajout rapide désactivé : tu confirmes chaque carte.',
     );
   };
@@ -446,7 +453,7 @@ export function Scanner() {
   } else if (base.statut === 'attente' || base.statut === 'chargement') message = 'Préparation de la reconnaissance…';
   else if (base.statut === 'absente') {
     message = 'La reconnaissance n’est pas encore disponible : la base de scan n’a pas été publiée. Cherche ta carte à la main en attendant.';
-    action = <PetitBouton onClick={() => naviguer('/recherche')}>Chercher à la main</PetitBouton>;
+    action = <PetitBouton onClick={chercherALaMain}>Chercher à la main</PetitBouton>;
   } else if (base.statut === 'erreur') {
     message = 'La base de reconnaissance n’a pas pu se charger. Vérifie ta connexion.';
     action = <PetitBouton onClick={relancerBase}>Réessayer</PetitBouton>;
@@ -555,7 +562,7 @@ export function Scanner() {
         <div className="flex justify-center pt-6">
           <button
             type="button"
-            onClick={() => naviguer('/recherche/scelles')}
+            onClick={chercherScelle}
             className="appui min-h-9 rounded-full bg-white/14 px-3.5 text-petit font-semibold text-white backdrop-blur-sm active:bg-white/25"
           >
             Un produit scellé ? Cherche-le ici
@@ -592,7 +599,8 @@ export function Scanner() {
           quantites={quantites}
           onChoisir={choisir}
           onReprendre={reprendre}
-          onChercher={() => naviguer('/recherche')}
+          onChercher={chercherALaMain}
+          onScelle={chercherScelle}
         />
       ) : null}
 
@@ -785,12 +793,15 @@ function PanneauResultat({
   onChoisir,
   onReprendre,
   onChercher,
+  onScelle,
 }: {
   phase: Extract<Phase, { nom: 'propositions' | 'inconnue' }>;
   quantites: Map<string, number> | undefined;
   onChoisir: (c: Carte) => void;
   onReprendre: () => void;
   onChercher: () => void;
+  /** Ouvre la recherche des produits scellés (le scanner ne reconnaît que les cartes) */
+  onScelle: () => void;
 }) {
   const { analyse } = phase;
   const inconnue = phase.nom === 'inconnue';
@@ -830,19 +841,34 @@ function PanneauResultat({
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3">
         {inconnue ? (
-          <div className="flex gap-3">
-            {analyse.apercu && (
-              <img src={analyse.apercu} alt="La carte telle que l’app l’a vue" className="coins-carte w-16 shrink-0 self-start shadow-[0_4px_12px_rgb(21_23_28/0.18)]" />
-            )}
-            <div className="min-w-0 text-petit">
-              <p className="font-semibold">Je ne retrouve pas cette carte dans le catalogue.</p>
-              <ul className="mt-2 list-disc space-y-1 pl-4 text-encre-2">
-                <li>Pose-la à plat sur un fond uni, plutôt sombre.</li>
-                <li>Évite les reflets : lumière au-dessus, pas de flash, sors-la de sa pochette si elle brille.</li>
-                <li>Fais-lui remplir le cadre.</li>
-              </ul>
+          <>
+            <div className="flex gap-3">
+              {analyse.apercu && (
+                <img src={analyse.apercu} alt="La carte telle que l’app l’a vue" className="coins-carte w-16 shrink-0 self-start shadow-[0_4px_12px_rgb(21_23_28/0.18)]" />
+              )}
+              <div className="min-w-0 text-petit">
+                <p className="font-semibold">Je ne retrouve pas cette carte dans le catalogue.</p>
+                <ul className="mt-2 list-disc space-y-1 pl-4 text-encre-2">
+                  <li>Pose-la à plat sur un fond uni, plutôt sombre.</li>
+                  <li>Évite les reflets : lumière au-dessus, pas de flash, sors-la de sa pochette si elle brille.</li>
+                  <li>Fais-lui remplir le cadre.</li>
+                </ul>
+              </div>
             </div>
-          </div>
+            {/* Un ETB ou un display photographié tombe ici : on l'envoie vers la recherche des scellés, pas vers des cartes */}
+            <button
+              type="button"
+              onClick={onScelle}
+              className="appui mt-3 flex min-h-14 w-full items-center gap-3 rounded-2xl bg-surface-2 px-3.5 py-2.5 text-left shadow-[inset_0_0_0_1px_var(--trait)] active:bg-trait/60"
+            >
+              <Package size={22} aria-hidden className="shrink-0 text-encre-2" />
+              <span className="min-w-0 flex-1 text-petit">
+                <span className="block font-semibold">C’est un produit scellé ?</span>
+                <span className="block text-encre-2">ETB, display, coffret… : le scanner ne lit que les cartes, cherche-le par son nom.</span>
+              </span>
+              <ChevronRight size={18} aria-hidden className="shrink-0 text-encre-3" />
+            </button>
+          </>
         ) : (
           premiere && (
             <>
@@ -909,14 +935,26 @@ function PanneauResultat({
         )}
 
         {!inconnue && (
-          <button
-            type="button"
-            onClick={onChercher}
-            className="mx-auto mt-1 flex min-h-10 items-center gap-1.5 px-2 text-petit font-semibold text-encre-2 active:opacity-70"
-          >
-            <Search size={16} aria-hidden />
-            Chercher à la main
-          </button>
+          <div className="mt-1 flex flex-wrap justify-center gap-x-3">
+            <button
+              type="button"
+              onClick={onChercher}
+              className="flex min-h-10 items-center gap-1.5 px-2 text-petit font-semibold text-encre-2 active:opacity-70"
+            >
+              <Search size={16} aria-hidden />
+              Chercher à la main
+            </button>
+            {analyse.confiance.niveau !== 'sure' && (
+              <button
+                type="button"
+                onClick={onScelle}
+                className="flex min-h-10 items-center gap-1.5 px-2 text-petit font-semibold text-encre-2 active:opacity-70"
+              >
+                <Package size={16} aria-hidden />
+                Un produit scellé ?
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -940,8 +978,10 @@ function PanneauResultat({
               aria-label={premiere && qte(premiere.carte) > 0 ? 'Ajouter un exemplaire' : 'Ajouter à ma collection'}
               onClick={() => premiere && onChoisir(premiere.carte)}
             >
-              {/* Sur un très petit écran, « Ajouter » seul tient sur une ligne */}
-              Ajouter<span className="max-[359px]:hidden">{premiere && qte(premiere.carte) > 0 ? ' un exemplaire' : ' à ma collection'}</span>
+              {/* Sur un très petit écran, « Ajouter » seul tient sur une ligne. Un seul enfant : l'écart du bouton (gap) ne s'ajoute pas à l'espace. */}
+              <span>
+                Ajouter<span className="max-[359px]:hidden">{premiere && qte(premiere.carte) > 0 ? ' un exemplaire' : ' à ma collection'}</span>
+              </span>
             </Bouton>
           </div>
         )}

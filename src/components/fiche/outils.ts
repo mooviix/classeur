@@ -20,6 +20,16 @@ export function formatSaisie(v: number): string {
   return v.toFixed(2).replace('.', ',');
 }
 
+/**
+ * Date saisie ('YYYY-MM-DD', ou '' si effacée) : message d'erreur si elle est dans le futur, sinon null.
+ * L'attribut max du champ ne suffit pas : le clavier ou certains sélecteurs (iPhone) le laissent passer.
+ */
+export function erreurDate(valeur: string, aujourdhui: string, quoi: string): string | null {
+  if (!valeur) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(valeur)) return `${quoi} n’est pas une date valide.`;
+  return valeur > aujourdhui ? `${quoi} est dans le futur : vérifie le jour.` : null;
+}
+
 // ---------- Cartes ----------
 
 /** « 199/165 » quand le numéro est un nombre, sinon le numéro seul (« TG05 », « SWSH050 »). */
@@ -47,6 +57,15 @@ export function descriptionLot(lot: Possession, objet: ObjetCatalogue | null): s
 }
 
 export const PLATEFORMES = ['Vinted', 'Leboncoin', 'Cardmarket', 'eBay', 'Main propre', 'Autre'] as const;
+
+// ---------- Navigation ----------
+
+/**
+ * Ouvrir la recherche sur un onglet précis, champ vide (« Chercher à la main » du scanner) :
+ * naviguer('/recherche', { state: { [INTENTION_RECHERCHE]: 'cartes' } }). Lu une seule fois, à l'arrivée sur l'écran.
+ * (Les scellés ont leur propre adresse : /recherche/scelles.)
+ */
+export const INTENTION_RECHERCHE = 'ongletRecherche';
 
 // ---------- Gradation ----------
 

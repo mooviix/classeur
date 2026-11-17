@@ -6,12 +6,22 @@ import { valoriser, type ObjetCatalogue } from '../../data/valeur';
 import { modifierLot, type NouveauLot } from '../../db/collection';
 import { useReglages } from '../../db/reglages';
 import { db, type Etat, type Gradation, type Possession } from '../../db/schema';
-import { euros } from '../../lib/format';
+import { aujourdhui, euros } from '../../lib/format';
 import { Bouton } from '../Bouton';
 import { Feuille } from '../Feuille';
 import { annoncer } from '../fiche/annonce';
 import { Champ, ChampMontant, ChoixEtat, Compteur, Erreur, PuceAction, Puces, Rubrique } from '../fiche/Formulaire';
-import { CLASSE_CHAMP, descriptionLot, formatSaisie, lireGradation, lireMontant, useCleOuverture, versSaisieGradation, type SaisieGradation } from '../fiche/outils';
+import {
+  CLASSE_CHAMP,
+  descriptionLot,
+  erreurDate,
+  formatSaisie,
+  lireGradation,
+  lireMontant,
+  useCleOuverture,
+  versSaisieGradation,
+  type SaisieGradation,
+} from '../fiche/outils';
 
 interface Props {
   lot: Possession | null;
@@ -35,16 +45,32 @@ function FormulaireLot({ lot, objet, ouverte, onFermer }: Props) {
   const r = useReglages();
   const carte = objet?.type === 'carte' ? objet.carte : null;
 
-  const [cleVariante, setCleVariante] = useState<string | null>(lot?.variante ?? carte?.variantes[0]?.cle ?? null);
-  const [etat, setEtat] = useState<Etat>(lot?.etat ?? r.etatParDefaut);
-  const [gradation, setGradation] = useState<SaisieGradation | null>(lot?.gradation ? versSaisieGradation(lot.gradation) : null);
-  const [quantite, setQuantite] = useState(lot?.quantite ?? 1);
-  const [prix, setPrix] = useState(lot?.prixAchat != null ? formatSaisie(lot.prixAchat) : '');
-  const [dateAchat, setDateAchat] = useState(lot?.dateAchat ?? '');
-  const [valeurPerso, setValeurPerso] = useState(lot?.valeurManuelle != null ? formatSaisie(lot.valeurManuelle) : '');
-  const [lieu, setLieu] = useState(lot?.lieu ?? '');
-  const [note, setNote] = useState(lot?.note ?? '');
   const [erreur, setErreur] = useState<string | null>(null);
+  // Toute modification efface le message d'erreur de la tentative précédente (il est revérifié à l'envoi).
+  const champ =
+    <T,>(set: (v: T) => void) =>
+    (v: T) => {
+      setErreur(null);
+      set(v);
+    };
+  const [cleVariante, setCleVarianteBrut] = useState<string | null>(lot?.variante ?? carte?.variantes[0]?.cle ?? null);
+  const setCleVariante = champ(setCleVarianteBrut);
+  const [etat, setEtatBrut] = useState<Etat>(lot?.etat ?? r.etatParDefaut);
+  const setEtat = champ(setEtatBrut);
+  const [gradation, setGradationBrut] = useState<SaisieGradation | null>(lot?.gradation ? versSaisieGradation(lot.gradation) : null);
+  const setGradation = champ(setGradationBrut);
+  const [quantite, setQuantiteBrut] = useState(lot?.quantite ?? 1);
+  const setQuantite = champ(setQuantiteBrut);
+  const [prix, setPrixBrut] = useState(lot?.prixAchat != null ? formatSaisie(lot.prixAchat) : '');
+  const setPrix = champ(setPrixBrut);
+  const [dateAchat, setDateAchatBrut] = useState(lot?.dateAchat ?? '');
+  const setDateAchat = champ(setDateAchatBrut);
+  const [valeurPerso, setValeurPersoBrut] = useState(lot?.valeurManuelle != null ? formatSaisie(lot.valeurManuelle) : '');
+  const setValeurPerso = champ(setValeurPersoBrut);
+  const [lieu, setLieuBrut] = useState(lot?.lieu ?? '');
+  const setLieu = champ(setLieuBrut);
+  const [note, setNoteBrut] = useState(lot?.note ?? '');
+  const setNote = champ(setNoteBrut);
   const [enCours, setEnCours] = useState(false);
 
   const options = useMemo(
@@ -72,6 +98,8 @@ function FormulaireLot({ lot, objet, ouverte, onFermer }: Props) {
     if (!lot?.id || enCours) return;
     if (prixLu === null) return setErreur('Le prix d’achat n’est pas un montant. Écris par exemple 12,40, ou laisse vide.');
     if (valeurLue === null) return setErreur('La valeur estimée n’est pas un montant. Écris par exemple 80, ou laisse vide.');
+    const dateKo = erreurDate(dateAchat, aujourdhui(), 'La date d’achat');
+    if (dateKo) return setErreur(dateKo);
     let g: Gradation | undefined;
     if (carte && gradation) {
       const lu = lireGradation(gradation);
@@ -171,7 +199,17 @@ function FormulaireLot({ lot, objet, ouverte, onFermer }: Props) {
 
           <div className="mt-5 grid grid-cols-2 gap-3">
             <Champ label="Date d’achat">
-              {(id) => <input id={id} type="date" value={dateAchat} onChange={(e) => setDateAchat(e.target.value)} className={`${CLASSE_CHAMP} chiffres`} />}
+              {(id) => (
+                <input
+                  id={id}
+                  type="date"
+                  value={dateAchat}
+                  max={aujourdhui()}
+                  aria-invalid={erreurDate(dateAchat, aujourdhui(), '') != null || undefined}
+                  onChange={(e) => setDateAchat(e.target.value)}
+                  className={`${CLASSE_CHAMP} chiffres`}
+                />
+              )}
             </Champ>
             <Champ label="Lieu">
               {(id) => <input id={id} value={lieu} onChange={(e) => setLieu(e.target.value)} placeholder="facultatif" autoComplete="off" className={CLASSE_CHAMP} />}
