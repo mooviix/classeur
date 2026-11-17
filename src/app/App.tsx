@@ -1,18 +1,21 @@
+import { lazy, Suspense } from 'react';
 import { Route, Router, Switch, useLocation } from 'wouter';
 import { useHashLocation } from 'wouter/use-hash-location';
 import { BarreOnglets } from './BarreOnglets';
 import { Accueil } from '../screens/Accueil';
-import { Collection } from '../screens/Collection';
-import { Scanner } from '../screens/Scanner';
-import { Extensions } from '../screens/Extensions';
-import { Extension } from '../screens/Extension';
-import { Recherche } from '../screens/Recherche';
-import { FicheCarte } from '../screens/FicheCarte';
-import { FicheScelle } from '../screens/FicheScelle';
-import { Reglages } from '../screens/Reglages';
-import { Souhaits } from '../screens/Souhaits';
-import { Analyse } from '../screens/Analyse';
-import { Introuvable } from '../screens/Introuvable';
+
+// Les autres écrans se chargent à la demande : l'accueil s'affiche plus vite (tout reste précaché pour le hors-ligne).
+const Collection = lazy(() => import('../screens/Collection').then((m) => ({ default: m.Collection })));
+const Scanner = lazy(() => import('../screens/Scanner').then((m) => ({ default: m.Scanner })));
+const Extensions = lazy(() => import('../screens/Extensions').then((m) => ({ default: m.Extensions })));
+const Extension = lazy(() => import('../screens/Extension').then((m) => ({ default: m.Extension })));
+const Recherche = lazy(() => import('../screens/Recherche').then((m) => ({ default: m.Recherche })));
+const FicheCarte = lazy(() => import('../screens/FicheCarte').then((m) => ({ default: m.FicheCarte })));
+const FicheScelle = lazy(() => import('../screens/FicheScelle').then((m) => ({ default: m.FicheScelle })));
+const Reglages = lazy(() => import('../screens/Reglages').then((m) => ({ default: m.Reglages })));
+const Souhaits = lazy(() => import('../screens/Souhaits').then((m) => ({ default: m.Souhaits })));
+const Analyse = lazy(() => import('../screens/Analyse').then((m) => ({ default: m.Analyse })));
+const Introuvable = lazy(() => import('../screens/Introuvable').then((m) => ({ default: m.Introuvable })));
 
 /** Écrans plein écran, sans la barre d'onglets. */
 const PLEIN_ECRAN = ['/scanner'];
@@ -23,6 +26,7 @@ function Coquille() {
   return (
     <div className="min-h-dvh">
       <main className={pleinEcran ? '' : 'pb-onglets'}>
+        <Suspense fallback={<div className="min-h-dvh" aria-busy="true" />}>
         <Switch>
           <Route path="/" component={Accueil} />
           <Route path="/collection" component={Collection} />
@@ -37,6 +41,7 @@ function Coquille() {
           <Route path="/reglages" component={Reglages} />
           <Route component={Introuvable} />
         </Switch>
+        </Suspense>
       </main>
       {!pleinEcran && <BarreOnglets />}
     </div>
