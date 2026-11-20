@@ -1,0 +1,15 @@
+{
+ "v": 1,
+ "genereLe": "2026-11-20T10:10:22.374Z",
+ "datePrix": "2026-11-20",
+ "createdAt": "2026-11-20T02:43:56+0100",
+ "catalogue": "catalogue-fr.5eac3e0b.json",
+ "scelles": "scelles-fr.74b24d14.json",
+ "prix": "prix/2026-11-20.json",
+ "historique": {
+  "debut": "2024-12-30",
+  "fin": "2026-11-20"
+ },
+ "logos": "logos.json",
+ "scan": "scan/empreintes-332ba8c6.bin"
+}
